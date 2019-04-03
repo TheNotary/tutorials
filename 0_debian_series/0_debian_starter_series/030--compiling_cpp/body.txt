@@ -1,0 +1,76 @@
+Well, since we're setting up a debian system, we may as well review how to compile and run hello world.  We'll just think of this blog as a reference to look back at latter.  
+
+The C++ compiler is already installed on debian.  It would be a little absurd for linux to not have one installed already.  
+It's called g++, and you run it like this:
+
+[code]
+g++ hellosource.c
+[/code]
+and it will produce "a.out" in the directory from which it was run.  a.out is like your hello.exe, only for linux.  To run it, type:
+[code]
+./a.out
+[/code]
+nifty...
+
+So lets write up some source code, compile it, and run it.  Then move on, cause we're not in the mood to build a c++ program atm.  
+
+(hellosource.c)
+[code]
+
+#include <iostream>
+
+using namespace std;
+
+int main()
+{
+    cout << "Hello world!" << endl;
+    return 0;
+}
+
+
+[/code]
+
+Cool, make that file, and run the g++ compile command, and then run the file.  Then move on.  
+
+
+Shoot... before we move on, we better compile the same thing in windows too, using an IDE.  
+
+Doing that with code block is almost as easy, it just takes a little more time because you need to download the IDE.  
+
+(Download the IDE/compiler)
+[code]
+codeblocks-10.05mingw-setup.exe:
+http://www.codeblocks.org/downloads/26#windows
+[/code]
+
+Install it... then...
+[code]
+File-> new -> project
+  SELECT "Console Application"
+  CLICK "Go"
+
+    CLICK "Next"
+    
+    CHOOSE "C++"
+    CLICK "Next"
+    
+    (input project name and directory where project will be)
+    CLICK "Next" 
+    
+    CHOOSE "GNU GCC Compiler"
+    CLICK "Finish"
+    
+    
+      Click the Play button in upper left of screen
+        Exit the console window when you're done marvelling at the C++ application you built
+        
+      On the left of the screen, where the "Projects" tab is, maximize the tree nodes till you find main.cpp
+        main.cpp is the windows name for hellosample.c
+          double click it to view it's contents.  
+[/code]      
+
+
+OK, that was productive, now lets move on.  
+      
+    
+(note:  http://www.tacc.utexas.edu/services/userguides/intel/c_ug/linux106.htm)

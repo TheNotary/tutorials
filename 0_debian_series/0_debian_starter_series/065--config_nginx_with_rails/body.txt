@@ -1,0 +1,205 @@
+This post is a part of a mini-series!
+[size="4"]Day 6[/size]
+1)  [color="#8B0000"]Installing  [url="http://www.dreamincode.net/forums/blog/1662/entry-3490-day-6-installing-rails-gem-rvm-etc/"]link[/url][/color]
+2)  [color="#8B0000"]Test a Rails App!  [url="http://www.dreamincode.net/forums/blog/1662/entry-3487-day-63-rails-application/"]link[/url][/color]
+3)  [color="#8B0000"]Configuring Webserver  [/color](You Are Here)
+4)  [color="#8B0000"]Configuring MySql  [/color][url="http://www.dreamincode.net/forums/blog/1662/entry-3502-day-67-configuring-mysql-for-your-rails-app/"]link[/url]
+
+
+ref:  http://wiki.rubyonrails.org/deployment/nginx-thin
+
+Ok, let's assume that you've setup nginx on your computer, and installed rails, and even have PHP configured maybe.  Now you want to work with rails via nginx.  Well, that means you need to install 'thin' to be the ruby server.  We'll do that in this blog post.
+
+[b][size="3"]Prerequisites/assumptions:[/size][/b]
+1)  [url="http://www.dreamincode.net/forums/blog/1662/entry-3419-day-2-installing-mysql-a-web-server-named-nginx-and-php-in-debian-and-terrible-vi-notes/"]nginx installed[/url]
+2)  [url="http://www.dreamincode.net/forums/blog/1662/entry-3490-day-6-installing-rails/"]ruby, gem, and rails are installed[/url]
+3)  You have a debian based system (I hear ubuntu is similar enough)
+
+
+[b][size="4"]:: Install Thin[/size][/b]
+Thin is a gem, so it's easy to download the latest version onto your system.  
+[code]
+$  rvm 1.9.2
+$  gem install thin
+$  thin install
+[/code]
+
+
+Now have thin autoboot at startup:
+[code]
+$  /usr/sbin/update-rc.d -f thin defaults
+[/code]
+
+
+Now create a configuration script that will... tell thin how many processes to spawn, where your app is, etc. 
+
+Here's the "key: that I referenced:
+[code]
+>> KEY >>  sudo thin config -C /etc/thin/<config-name>.yml -c <rails-app-root-path> --servers <number-of-threads> -e <environment>
+[/code]
+
+Here's my own actual implimentation:
+[code]
+$  thin config -C /etc/thin/myapp.yml -c /home/kentos/dev/rails/mt --servers 5 --socket /tmp/thin.myapp.sock -e development
+[/code]
+
+That command will create a new yml file visible from [inline]cat /etc/thin/myapp.yml[/inline].
+
+Then start those thin processes which handle the guts of rails:
+[code]
+$  /etc/init.d/thin start
+[/code]
+
+
+[spoiler]
+You might encounter this error (check YOUR_APP/log/thin.0.log):
+[code]
+>> Writing PID to tmp/pids/thin.0.pid
+>> Using rack adapter
+>> Exiting!
+/usr/local/rvm/gems/ruby-1.9.2-p318/gems/bundler-1.1.3/lib/bundler/runtime.rb:31:in `block in setup': You have already activated rack 1.4.1, but your Gemfile requires rack 1.2.5. Using bundle exec may solve this. (Gem::LoadError)
+[/code]
+
+If so, this is because you have [b]two[/b] versions of the gem 'rack' installed.  You [i]could[/i] remove the unneeded gem (or better yet, use gemsets in RVM) OR you can have your own app start the thin processes for you in which case it will automatically choose the version of rack appropriate for you web application.  
+
+[code]
+$  cd YOUR_APP
+$  bundle exec /etc/init.d/thin start
+[/code]
+[/spoiler]
+
+Or, the more proper way would be to let your app start thin, especially if you are using an older version of rails in your app and have a new version installed in the same gemset (it's ok if that make no sense, btw).
+[code]
+$  cd YOUR_APP
+$  bundle exec /etc/init.d/thin start
+[/code]
+
+
+
+
+
+[size="4"][b]::  Configure nginx (yes, again...)[/b][/size]
+
+To your nginx configuration, once again, you must make changes, these:
+[list]
+[*]Add information about your thin processes
+[*]change the root location to your app
+[*]add a bunch of declairations
+[*]add a weird chuck of if statements
+[/list]
+If you have php setup already, you can probably get away with just leaving that in place.  
+
+
+(this content should be involved in your  /usr/local/nginx/conf/nginx.conf file... Oh, be aware that some of the stuff in this will differ dependant on the version of nginx you installed.  This data is based arround version 1.0.4.)
+[code]
+
+
+user nginx;   # you can leave this line as w/e
+worker_processes 5;
+
+error_log /var/log/nginx.error.log;
+pid /var/run/nginx.pid;
+
+events {
+  worker_connections 1024;
+}
+
+http {
+  include mime.types;
+  default_type application/octet-stream;
+
+  log_format main '$remote_addr - $remote_user [$time_local] $request '
+                      '"$status" $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+  access_log /var/log/nginx.access.log main;
+
+  sendfile on;
+
+  keepalive_timeout 65;
+
+  upstream thin_cluster {                        #   NEW ADDITION!
+    server unix:/tmp/thin.myapp.0.sock;          #   The names of these depends on what
+    server unix:/tmp/thin.myapp.1.sock;          #   You specify after '--socket'
+    server unix:/tmp/thin.myapp.2.sock;          #   When you run 'thin config'
+    server unix:/tmp/thin.myapp.3.sock;          #   And the output you get when you run 
+    server unix:/tmp/thin.myapp.4.sock;          #   '/etc/init.d/thin start'
+  }
+
+  server {
+    listen 80;
+    server_name www.myserver.com;
+
+    root /home/kentos/dev/rails/mt/public;                            #   CHANGE LOCATION!
+
+    location / {
+      proxy_set_header X-Real-IP $remote_addr;                         #   NEW ADDITIONS!
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header Host $http_host;
+      proxy_redirect off;
+
+      if (-f $request_filename/index.html) {                            #   NEW ADDITIONS!
+        rewrite (.*) $1/index.html break;
+      }
+      if (-f $request_filename.html) {
+        rewrite (.*) $1.html break;
+      }
+      if (!-f $request_filename) {
+        proxy_pass http://thin_cluster;
+        break;
+      }
+      
+      #index       index...                                 #   COMMENT THE INDEX LINE OUT I GUESS
+    }
+
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+      root html;
+    }
+  }
+}
+[/code]
+
+
+Now my only problem is, how do I get those thin processes to auto start at boot?  To be concluded...
+
+Ok, once you've got that setup, you should be able to make a new rails project in [inline]/home/kentos/dev/rails/mt[/inline] (it's based on the 'root' directive you give in your nginx.conf
+
+[code]
+$  cd /home/kentos/dev/rails
+$  rails new mt
+$  /etc/init.d/thin restart
+[/code]
+
+Then navigate to [inline]http://localhost[/inline] and you should see your newly created and functional rails app.  If not, you went wrong somewhere, please share a comment about that.
+
+
+[b][size="4"]Clarifications:[/size][/b]
+I think it's important to point out how all of these technologies are working together in order to "just work."  
+
+To see a rails app in a web browser, your server needs, at bare minimum:
+1)  A web server (duh, right?)
+2)  Ruby (duh, right?)
+3)  A ruby server (thin is like our... PHP for ruby.  Get that?  I'm not totally sure, but that's how I think about thin, it allows the magic of rails to work.)
+4)  Gem (duh) and the gem named rails (duh)
+
+OK, so when you've got all that going, and you navigate to localhost and see a beautiful starter page, you might wonder the following questions:
+
+[b]A.  How does it know what rails project to show?[/b]
+  - nginx.conf
+  - HTTP Host header (eg. example.com vs example2.com can direct elsewhere, even if same IP)
+
+[b]B.  How does it know what ruby server to use?[/b]
+  - nginx.conf
+
+[b]C.  How does it know what ruby version to use?[/b]
+  -Thin (whatever ruby environment was active at the time of [inline]thin install[/inline]) (untested, brb)
+
+[b]C.  How does it know what rails version to use[/b]
+  -Gemfile
+
+[b]D.  How does it know what database system to use?[/b]
+  -Gemfile
+  -database.yml
+
+So you can see that 3 different technologies are configured, ever so delicately, together to bring your end user a slick rails experience.

@@ -1,0 +1,265 @@
+This is going to be my worst blog entry so far, but I need it online cause I'm moving from site to site too fast.  
+
+I'm finally going to setup a samba server at work.  This guy got viruses (again...) and I'm going to setup users and prevent him from executing anything other than the bare necessities.  
+
+1)  I'm going to use clonezilla and actually image his hard drive after a fresh install.  This image will be stored on the samba (~50gb or so, there's 5 PCs I'll do this to I think).  
+
+2)  I'm going to setup the samba server to hold each user's documents there so any user can sit at any PC, school PC style!  
+
+3)  I'm going to setup Raid 1 and store backups of our DB on the system too.    
+
+4)  What about laptops?  Can I get those to have local access to files too?  
+
+5)  I'm going to setup access restrictions on all the computers.  
+
+
+Since I'm not big on spending money, I'm going to start out by simply editiing the policy of all the users
+
+
+[size="6"]Windows User Policy Editing[/size]
+On each individual machine, I need to create a user for each employee... (ughh... want budget samba machine today!)  Hey!  Why don't I just use my work test machine as the samba client?  It's got 40gb unless I'm mistaken...
+
+
+[size="6"]Setup a Samba Machine!  (samba 3 only, this doesn't help for user logins as written)[/size]
+
+ref:  http://www.debianadmin.com/file-server-configuration-in-debian-using-samba.html
+
+Before following that tutorial, understand:
+
+1)  'etc/samba/smb.conf'
+You're installing and configuring the server that all other windows machines will connect to.  The settings file is located at 'etc/samba/smb.conf'.
+
+2)  'etc/samba/smbpasswd'
+For each samba user you want, you need to set up the unix user account, and create a sambapasswd for their windows authentication password.  Individual users are controlled by a flat file located at 'etc/samba/smbpasswd'.  To add a user use [inline]$  smbpasswd -a david[/inline] but that unix user must already exist.  
+
+3)  
+
+
+4)  '/home/samba/profiles/'
+Each user will have a profile directory created for them the first time they log in.  By default, these directories will be created at '/home/samba/profiles' and you must allow all users write access to this directory (but access to subdirectories will be automatically managed for you).
+
+5)  
+
+
+1.  Install Samba
+$  apt-get install samba samba-common samba-client
+
+2.  Go through Samba setup
+Workgroup/domain:  test
+Use password encryption:  Yes
+WINS:  No
+Run Method:  Daemon
+Create Samba password database file:  Yes
+
+
+Alternatively, checkout the configuration file (I wasn't prompted with anything much when installing over ssh)
+
+/etc/samba/smb.conf
+
+Notes:
+
+(highlights)
+[code]
+[global]
+workgroup = WORKGROUP    # sets up the workgroup name for the server to be in
+netbios name = SAMBA    # sets up the computer name for the server
+wins support = yes      # Tells samba to be a wins server
+
+.
+.
+.
+
+#make it so users authenticate against this server
+domain logons = yes  #uncomment this line imo
+
+
+# The following setting only takes effect if 'domain logons' is set
+# It specifies the location of a user's home directory (from the client
+# point of view)
+   logon drive = H:
+#   logon home = \\%N\%U
+
+
+# This allows Unix users to be created on the domain controller via the SAMR
+# RPC pipe.  The example command creates a user account with a disabled Unix
+# password; please adapt to your needs
+ add user script = /usr/sbin/adduser --quiet --disabled-password --gecos "" %u
+
+# This allows Unix groups to be created on the domain controller via the SAMR
+# RPC pipe.
+ add group script = /usr/sbin/addgroup --force-badname %g
+
+
+
+
+# By default, \\server\username shares can be connected to by anyone
+# with access to the samba server.
+# The following parameter makes sure that only "username" can connect
+# to \\server\username
+# This might need tweaking when using external authentication schemes
+   valid users = %S     #consider commenting this out
+
+
+
+# Un-comment the following and create the profiles directory to store
+# users profiles (see the "logon path" option above)
+# (you need to configure Samba to act as a domain controller too.)
+# The path below should be writable by all users so that their
+# profile directory may be created the first time they log on
+[profiles]
+   comment = Users profiles
+   path = /home/samba/profiles
+   guest ok = no
+   browseable = no
+   create mask = 0600
+   directory mask = 0700
+
+
+
+[/code]
+
+
+3.  Test it out
+
+Test your smb.conf syntax.  
+[code]
+$  testparm
+[/code]
+
+Create the profiles directory
+[code]
+$  mkdir -p /home/samba/profiles
+$  chmod 0777 /home/samba/profiles
+[/code]
+
+Create a user with smb privs
+[code]
+$  adduser test --disabled-password   # this will make the user directory and passwd, while preventing user's ssh login as opposed to useradd
+$  smbpasswd -a test
+[/code]
+
+At this point... it's kind of a security threat to allow any of the created users the ability to log into the actual unix system or they would have delete access to /home/samba/profiles, right?   
+
+Restart the samba machine
+[code]
+$  /etc/init.d/samba restart
+[/code]
+
+
+Test Login
+[code]
+$  smbclient -L //127.0.0.1 -U test
+root@sweets:/home# smbclient -L //127.0.0.1 -U test
+Enter test's password:
+Domain=[WORKGROUP] OS=[Unix] Server=[Samba 3.5.6]
+
+        Sharename       Type      Comment
+        ---------       ----      -------
+        print$          Disk      Printer Drivers
+        IPC$            IPC       IPC Service (YOURNAME server)
+        test            Disk      Home Directories
+Domain=[WORKGROUP] OS=[Unix] Server=[Samba 3.5.6]
+
+        Server               Comment
+        ---------            -------
+        YOURNAME             YOURNAME server
+
+        Workgroup            Master
+        ---------            -------
+        WORKGROUP
+[/code]
+
+Cool!  It's working.  Now let's set it up in windows XP so you can connect (I might not discuss this here cause I know it so second hand at this point).  
+
+Before we move on, let's give it another test on windows.  In a windows explorer window, go to the address...
+[code]
+\\192.168.1.2
+[/code]
+Where inserting the address of your samba machine instead of what I put.  It should prompt for your password which you can deliver.  When you try to access the share, it will likely deny you.  That's some hardcore security, isn't it.  We might be able to enable this.  
+
+To force windows to log out of a samba server (very handy) use this command.  
+[code]
+>  net use \\YOUR-SHARE-LOCATION /delete /yes
+[/code]
+
+
+
+... Edit, This is samba 3, it's not designed to do AD (Active Directory) authentication, so all it can do is handle file sharing I think.  Maybe someday I will setup a samba 4 machine and write a tut.  Right now it's not a priority.  
+
+
+Here's an example of a shared folder I just wrote up which somewhat explains how privledge masks work...
+
+(/etc/samba/smb.conf)
+[code]
+.
+.
+.
+[vault]
+   comment = Raid 1 secured folder share
+   path = /vault/samba/vault
+   read only = no
+   browseable = yes
+   guest ok = yes
+   directory mask = 0704   # By defualt, files are now created as readable by everyone,
+   create mask = 0704      # But writable only by the owner
+[/code]
+I chown vault to be the IT user, this let's me create store files there and allows anyone to read them, and no one else can create files there.  
+
+
+[size="6"]Samba 4 (with AD support aka logins, incomplete, not yet working)[/size]
+Samba 4 is still in alpha.  But it has a massive test suit, and all of the tests pass for it so I'm going to use it as my AD server.  
+
+ref:  http://wiki.samba.org/index.php/Samba4/HOWTO#git
+
+
+=Install Samba 4 on debian=
+
+1.  Download samba 4
+
+$  cd ~/tmp
+$  wget http://ftp.samba.org/pub/samba/samba4/samba-4.0.0alpha16.tar.gz
+$  tar -zxvf samba-4.0.0alpha16.tar.gz
+
+2.  Compile, test and install samba
+
+$  apt-get install build-essential libattr1-dev libblkid-dev libgnutls-dev libreadline5-dev python-dev autoconf python-dnspython gdb pkg-config bind9utils libpopt-dev
+
+$  ./configure.developer
+$  make
+$  make quicktest
+$  make install
+
+
+
+3.  Provision Samba4 
+samdom.example.com = YOUR DOMAIN
+SOMEPASSWORD = YOUR PASSWORD
+SAMBA = YOUR netbios name
+
+
+
+$  ./source4/setup/provision --realm=samba.example.com --domain=SAMBA --adminpass=SOMEPASSWORD --server-role='domain controller'
+
+
+
+4.  Run Samba4
+
+$  samba
+
+
+
+5.  Test samba on server side
+
+$  smbclient --version
+
+
+
+
+[size="6"]Configuring Windows XP to login to your new domain controller thingy[/size]
+[url="http://support.microsoft.com/kb/291559"]Ctrl+alt+Del login[/url]
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\DisableCAD "DWORD" = 0
+
+Enable Logoff
+gpedit.msc
+User Configuration > Administrative Templates > Start Menu & Taskbar
+

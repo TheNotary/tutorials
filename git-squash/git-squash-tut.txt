@@ -1,0 +1,305 @@
+Git commit histories can sometimes be a mess to look at.  Sometimes you make multiple commits that work on the same feature, and when you're done with the feature, you'd like to just merge the commits together so they show up in the history as a single commit.  Sometimes you make one commit, and then you realized you left in some debugging comments so you make a followup commit that just says "cleaned up comments".  It sure would be nice to have one commit per complete feature/change rather than having partial changes which won't compile/run because they were committed in the middle of the task.  
+
+To tutorial this subject, first I'll link you to my reference:  http://www.youtube.com/watch?v=msuJGG2iWjs
+
+Then I'll link you to my example git repo so we can do some commit squashing together.  
+
+[size="4"]1)  Download the example repo from my github account.  [/size]
+
+```
+$  git clone https://github.com/thisismygit/git-squash-demo.git
+$  cd git-squash-demo
+```
+
+[size="4"]2)  Check out the branches to see what I've done.[/size]
+
+```
+$  git branch
+* master
+```
+
+Well we've got one local branch...  But if you navigate to github.com/thisismygit/git-squash-demo you will see that I have three branches.  You can list remote branches by the below command.  
+
+```
+$  git branch -r
+  origin/HEAD -> origin/master
+  origin/count-up
+  origin/master
+  origin/paragraph
+```
+
+Let's go ahead and "pull these branches down" even though the following operation doesn't actually utilize the network at all, everythings in the local repo already.  
+
+```
+$  git checkout paragraph
+$  git checkout count-up
+```
+
+There.  That was kind of an annoying step, but now the branches will show up nicely when we type [inline]$  git branch[/inline].  
+
+
+[size="4"]
+3)  Let's get oriented[/size]
+
+So you might feel somewhat in the dark as to what kind of repo you just downloaded.  Well, to fill yourself in on the details, you can run the below command to pull up a lovely tree-like representation of the branches and their commits.  
+
+```
+# you might want to alias this one as glg (Git Log Graph pronounced "glug")
+
+$  git log --branches --tags --graph --oneline --decorate
+
+* a2db554 (origin/paragraph, paragraph) oops, I forgot a period
+* bc773d4 added a paragraph
+| * 793432b (HEAD, origin/count-up, count-up) counted to 10
+| * c64af01 counted to 5
+| * f69d9f5 counted to 4
+| * b6a32e8 counted to 3
+| * bb6bef3 counted to 2
+| * 81a0e2c counted to 1
+|/  
+* 289b433 (origin/master, origin/HEAD, master) initial commit
+```
+
+Simple, right?  There's actually a lot of info up there.  
+[spoiler]
+From the above graph you can see that all we've done in the master branch so far is make an initial commit.  Then we started making commits in the count-up branch.  And the later on we created a paragraph branch and did stuff in that.  
+
+Those hashy looking numbers are commit IDs.  Anytime you want to specify a particular commit, you can copy and paste those hashes in...  So try the command `git checkout 81a0e2c` and you'll be able to "go back in time" to see what the working directory looked like at the time of that commit.  If you type `git log` you'll see the complete hash, these are actually the short 'pretty' versions of the hash.  
+
+It's also showing you where HEAD is (the commit that is currently checked out... usually a 'branch tip' which is a word for the latest commit of a branch).  Our local repo's HEAD (like the header on a record player) is placed on the tip of the count-up branch.  origin/master is where the HEAD of the remote repository is situated (that means the repo on github shows this commit by default when you navigate to github.com/thisismygit/git-squash-demo).  
+
+The graph is also showing that the local branch tip for 'paragraph' and for 'count-up' is the same as the remote branch tips...  So the local and remote repos are perfectly in sync at this point.  That's all good to know, huh?
+[/spoiler]
+
+
+
+[size="4"]4)  Let's clean up the count-up branch to be one commit.  [/size]
+
+Let's analyze the count-up branch
+```
+$  git checkout count-up
+$  cat doc
+Here is my doc file.  It can count to ten!
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+
+$  git checkout 81a0e2c   # this checks out the first commit in the count-up branch
+$  cat doc
+Here is my doc file.  It can count to ten!
+1
+```
+
+
+Ok, from the above analysis, we can see that we made a commit for each number we added to the string (but got bored after the 5th one and just counted all the way to 10).  We alternatively could have done [inline]$  git difftool 81a0e2c [/inline].  For vimdiff an acceptable colorshceme might be ":color asu1dark" or ":color autumn".  To get out easily ctrl+z.  
+
+To clean the commit history up here, we're going to:
+
+i.  Reset our commits up to the first commit of the count-up branch
+ii. Ammend the first commit of the count-up branch to reflect all the changes that were made leading up to the last commit of that branch
+
+```
+$  git checkout count-up
+
+$  git reset --soft 81a0e2c  # this command 'resets' the repo back to the specified commit 
+```
+
+The git reset command gets rid of the commits upto the one specified, but it retains the changes of the reset commits in the working directory (so you'll have "changes to be commited" now)...  You can see a diff of the working directory from the latest commit by:
+
+```
+$  git diff HEAD
+
+diff --git a/doc b/doc
+index b4e0610..766f886 100644
+--- a/doc
++++ b/doc
+@@ -1,2 +1,2 @@
+ Here is my doc file.  It can count to ten!
+-1
++1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+```
+
+
+[size="4"]5)  Amend the prior commit with the current working directory[/size]
+
+You'll see that after running the reset command, [inline]git status[/inline] will show that there are modifications that need to be committed.  You likely already know how to just plain old commit them, but instead of just committing them, we're going to amend the last commit with what's in our working directory (essentially the status of 'counted to 10').  
+
+```
+$  git commit --amend -m "counted up to 10"
+```
+
+That will rename the prior commit message and amend it's contains to contain all the changes we made throughout the branch.  Now you can print the graph and it will look pretty:
+
+```
+$  glg
+* 46e0e4a (HEAD, count-up) counted up to 10
+| * a2db554 (origin/paragraph, paragraph) oops, I forgot a period
+| * bc773d4 added a paragraph
+|/  
+* 289b433 (origin/master, origin/HEAD, master) initial commit
+```
+
+
+[size="4"]6)  Rename Commit author as appropriate[/size]
+
+Now if you're accepting a pull request from someone for a public github repository, you'll automatically be designated as the 'commiter', and the true author of the code will still be named the author.  However you can change the author of the commit by the following line to either give credit to those responsible for the substantial portion of the code, or if you're a douche, you can use the command to plagurize someone elses work:
+
+```
+$  git commit --amend --author="Douchy McBag <douche@bag.com>"
+```
+
+please note that if you maintain with a myopic policy of plagurizm, you're unlikely to get help from others on the network, even if they spot something wrong you did in your pull request, they'll be mum about it because you've been percieved as a rude code maintainer.  It's far better to accept their pull request and then make commits afterwards to clean things up as an editor such as modify the readme and change variable names and method locations.  
+
+
+[size="4"]7)  Let's hop over to the paragraph branch and clean it. [/size] 
+
+Try it on your own: make it into one commit.  
+
+[spoiler]
+
+I'm going to show an alternative way that was shown in the video...  It seems equivelent to me but is more of a visual/ interactive approach (less command liney)...  
+```
+$  git checkout paragraph
+$  git shortlog
+
+TheNotary (1):
+      initial commit
+
+thisismygit (2):
+      added a paragraph
+      oops, I forgot a period
+      
+$  git rebase -i HEAD~2     # go back 2 commits
+
+pick 7d2fb92 added a paragraph
+s    a2db554 oops, I forgot a period   # change "pick" to "s" for squash and save
+```
+
+There's actually another way... to actually re-write the commit history.  It's a violent procedure that actually delete's both the commit entry and the underlying changes to the working directory that was made.  Scary!  Here's a ref:  http://stackoverflow.com/questions/11225293/what-is-the-difference-between-git-reset-vs-git-rebase  
+
+[/spoiler]
+
+
+
+[size="4"]8)  Merge the branches into master[/size]
+
+So to complete our project, let's merge the two branches into the master branch and then delete those branches and then look at glg.  
+
+Merge 'count-up' and delete the branch
+```
+$  git checkout master
+$  git merge count-up
+$  git branch -D count-up     # DANGER COMMAND
+```
+
+Hey, so we just used a 'DANGER COMMAND' for deleting the branch named 'count-up'.  Typically I only use the -d (lower case 'd') to delete branches because it won't let you delete the branch if you haven't merged it yet.  This is a lovely safety feature, but because origin has the branch still...  You'd need to push your commit to origin before you could delete the branch with the lowercase 'd'.  
+
+Now merge and delete 'paragraph'
+```
+$  git merge paragraph
+Auto-merging doc
+CONFLICT (content): Merge conflict in doc
+Automatic merge failed; fix conflicts and then commit the result.
+```
+
+Oh fun!  We got the wonderful merge message!  This means we get to play a mini-game they planted into the git command as an easter egg (kind of the way M$ planted a flight simulator in Microsoft word).  
+
+This is called a "merge conflict" or a "merge fun party" as I sometimes call them.  You basically get these messages when git is unsure what you would like your resulting branch to look like because the same file was modified in both merging branches.  You can get out of merge conflicts at any time with the following command which cancels the merge.
+
+```
+$  git merge --abort
+```
+
+But instead of running that command, we are going to solve the "merge fun party".  
+
+Markers have been placed in the conflicting file ('doc' was indicated as the conflicting file in the warning message).  The file will show you what's in "HEAD" (which was the tip of the master branch) and what was in the merging commit (the tip of the 'paragraph' branch).  
+
+Have a look at what 'doc' looks like now:
+```
+$  cat doc
+Here is my doc file.  It can count to ten!
+<<<<<<< HEAD
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+=======
+
+I feel like this doc should have a paragraph, so here is that paragraph.
+>>>>>>> paragraph
+```
+
+
+So to solve the conflict, we want to keep both what's in the HEAD and also what's in the paragraph.  So first edit the file to look like this by deleting all of the merge conflict markers.  
+
+(doc: mid-merge)
+```
+Here is my doc file.  It can count to ten!
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+
+I feel like this doc should have a paragraph, so here is that paragraph.
+```
+
+Now, as a merge conflict resolver, you get to decide if it needs anything else, like maybe double spacing.  I think it does, so make the doc be double spaced.  
+
+(doc: final)
+```
+Here is my doc file.  It can count to ten!
+
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+
+I feel like this doc should have a paragraph, so here is that paragraph.
+```
+
+
+Now commit the changes.  
+
+```
+$  git add .
+$  git commit -m "merged paragraph"
+```
+
+
+Great job, now that we're done with the 'paragraph' branch, we should delete it because it's just ugly clutter at this point.  You might think it would be good to keep them around, but it's annoying because you need to merge them manually with the master branch as you continue developing, and then if you do want to go back into the branch and make changes.. it's just an annoying step to solve merge conflicts that spring up.  It's usually easier to just create the branch again from scratch.  
+
+```
+$  git branch -D paragraph  # DANGER COMMAND use lowercase when possible
+```
+
+Now you'll see that you have a beautiful graph and a clean commit history:
+```
+$  glg
+
+*   8497574 (HEAD, master) merged paragraph
+|\  
+| * 7d2fb92 added a paragraph
+* | 4c28d7f counted up to 10
+|/  
+* 289b433 (origin/master, origin/HEAD) initial commit
+```
+
+```
+$  git log
+
+commit 8497574dc4ae5e5fe08f0571c3133f99d10d5996
+Merge: 4c28d7f 7d2fb92
+Author: thisismygit <plzdontsendmail@me.com>
+Date:   Thu Apr 18 11:43:28 2013 -0500
+
+    merged paragraph
+
+commit 7d2fb928a9dcbbb86429857798e9c660f9c2937c
+Author: thisismygit <plzdontsendmail@me.com>
+Date:   Wed Apr 17 18:14:37 2013 -0500
+
+    added a paragraph
+
+commit 4c28d7f84112c74c82106ec27baa0c590e93229f
+Author: new author <bla@lkjf.com>
+Date:   Wed Apr 17 17:21:43 2013 -0500
+
+    counted up to 10
+
+commit 289b433a69f8714cc0d36983a94d6e4ae5afab87
+Author: TheNotary <no@mail.please>
+Date:   Wed Apr 17 17:20:37 2013 -0500
+
+    initial commit
+```
+
+Beautiful.  Now you should be more comfortable pushing code to public git repos in a clean manor and also just cleaning things up for your own needs.  You should note that some people like to watch the progress of your pull requests so if it's a large pull request, you might want to abstain from editing your commit history unless asked to do so.

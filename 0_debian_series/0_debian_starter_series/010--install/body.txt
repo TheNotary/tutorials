@@ -1,0 +1,112 @@
+After crying a little bit more, I decided to return to the Debian web site and try to find another iso that actually installed something I could use.  (needless to say, their website is very difficult to navigate, and their distribution layout, confusing).  
+
+http://cdimage.debian.org/debian-cd/6.0.1a/i386/iso-cd/
+
+Finally, I made it, I downloaded the first CD from that directory (apparently all you need is the first disc, and the other discs are there to confound dozers who are trying to build a server).  http://cdimage.debian.org/debian-cd/6.0.1a/i386/iso-cd/debian-6.0.1a-i386-CD-1.iso
+
+I downloaded that crazy CD, put it into my very old Dell and let her rip into the HDD.  This time I was greeted with a nice little load screen that gave me the options install, help, advanced, and graphical install.  How nice, but when I tried to do graphical install, it gave my some weird error that I could barely read...  Something like video something or other... I don't know, but it prevented me from seeing anything on the screen anymore, so I tried the regular install since that's probably why the option was put there.  And.  Same thing... wtf... Well, after some more crying, I googled and found that doing vga=normal worked.  So I went into help, and it returned me to the boot:  prompt after displaying a message, and I typed in:
+
+[code]
+
+install vga=normal
+
+[/code]
+
+Ding!  It worked, I set up the rest of the machine and it loaded up gnome which has become the fan favorite of the linux crowd since kde 4.0 apparently blew it.  
+
+I asked the installer to install SSH for me, but not the web server cause I will manually be doing that.  
+Gnome was installed and working automatically, which gave me a nice user interface that would prove to freeze sporadically when I attempted to operate my computer!  I've finally broken linux in!  
+
+With SSH already installed and taken care of, I just need to download putty onto my handy windows machine and I can 'telnet' into my linux box and work with it in the same way major web hosts allow you to!
+
+I'm going to add a few initial configurations to our installation to make it more awesome here:
+[spoiler]
+Remove password requirement from shutdown:
+(http://www.reversehack.in/index.php/linux/37-tutorial/48-shutdown-without-root-password)
+[code]
+$  chmod u+s /sbin/shutdown
+[/code]
+
+Add your primary user to the sudo list:
+([inline]$  visudo[/inline])
+[code]
+.
+.
+.
+# User privilege specification
+root      ALL=(ALL) ALL
+YOUR_USER ALL=(ALL) ALL          # ADD THIS!
+.
+.
+.
+[/code]
+
+Make the grub bootloader delay shorter:
+(/boot/grub/grub.cfg)
+[code]
+.
+.
+.
+set timeout=5     # change this to 2 or 1
+.
+.
+.
+[/code]
+
+(/etc/default/grub)
+[code]
+.
+.
+.
+GRUB_TIMEOUT=5    # change this to the desired time incase a script rebuilds your grub
+.
+.
+.
+[/code]
+
+
+[url="http://www.iceteks.com/forums/archive/t/3298/"]Debian, set static ip[/url]
+
+(/etc/network/interfaces)
+[code]
+.
+.
+.
+iface eth0 inet static
+       address 192.168.1.10
+       netmask 255.255.255.0
+       network 192.168.1.0
+       broadcast 192.168.1.255
+       gateway 192.168.1.1
+[/code]
+
+Setup VIM (the text editor):
+[code]
+$  apt-get install vim
+[/code]
+
+(/etc/vim/vimrc)
+[code]
+.
+.
+.
+syntax on
+colorscheme desert " or try slate
+.
+.
+.
+[/code]
+
+
+Setup auto login on putty.  
+[code]
+1)  on windows, use puttygen and generate a key, then save that key in a folder like ".ssh".  
+
+2)  Copy and paste the public portion of the key as it will be displayed in that top window of puttygen...
+
+3)  Paste that code into a file on your debian system at ~/.ssh/authorized_keys
+
+4)  chmod 0700 ~/.ssh/authorized_keys
+[/code]
+
+[/spoiler]

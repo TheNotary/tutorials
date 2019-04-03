@@ -1,0 +1,144 @@
+This post is a part of a mini-series!
+[size="4"]Day 6[/size]
+1)  [color="#8B0000"]Installing  [url="http://www.dreamincode.net/forums/blog/1662/entry-3490-day-6-installing-rails-gem-rvm-etc/"]link[/url][/color]
+2)  [color="#8B0000"]Test a Rails App![/color]  (You Are Here)
+3)  [color="#8B0000"]Configuring Webserver  [url="http://www.dreamincode.net/forums/blog/1662/entry-3495-day-65-configuring-nginx-to-serve-rails-apps/"]link[/url][/color]
+4)  [color="#8B0000"]Configuring MySql  [/color][url="http://www.dreamincode.net/forums/blog/1662/entry-3502-day-67-configuring-mysql-for-your-rails-app/"]link[/url]
+
+
+[color="#C0C0C0"]Note:  This entry is based on rails version 3.0.9.  To maximize your compatibility, you might want to use RVM to install that exact version... But as long as you use rails 3.x.x, things will probably work out just fine.  [/color]
+
+[spoiler]
+To install the version I had in mind when I first wrote up this tutorial, do... 
+[code]
+$  rvm use 1.9.2
+$  gem install rails -v=3.0.9
+[/code]
+
+Then to create the rails app (in case you have multiple versions installed), use this kind of syntax to specify the version appropriately:
+[code]
+$  rails _3.0.9_ new myapp
+[/code]
+[/spoiler]
+
+Finally we made it!  [url="http://www.dreamincode.net/forums/blog/1662/entry-3490-day-60-installing-rails/"]We setup our debian machine[/url], and can test a rails application out.  This entry entails my first rails creation.  Looks like we'll have a few more entries in this blog that explain how to setup a rails app using an alternative database engine, web server, and involve virtual hosts.  But not in this episode.  No, today we just make a plain simple rails application.  
+
+
+Rails is a web site design framework that allows a programmer to rapidly create
+A web place with persistent data access for the end user via the latest in 
+database technologies.  
+
+To say "hello" in rails, we're going to make a url direct us to a simple web page...
+And that simple web page will let us type inputs into it and it will store whatever
+we type.  It will be our duty as end users to type the words "hello world" rather
+than we hard code them (after all, it wouldn't make sense to just show a static,
+"hello world" in a web browser, since that's NOT what rails is for, rather, rails
+is for allowing web site visionaries to work with database-oriented web applications.
+
+
+
+[size="4"]
+Step 1)  make a new rails application[/size]
+
+[s]First we gotta set our system to explicitly use ruby version 1.8.7, because everytime it updates (they just updated a couple days ago) everyone's rails procedure changes...[/s] Ok, I'm updating this tut to use ruby ruby-1.9.3 (p194) to be trendy.  But the message is still important, being on the bleeding edge can be prohibitively taxing.  
+[code]
+$  rvm install 1.9.3
+$  rvm use 1.9.3
+$  gem install rails -v=3.2.0
+[/code]
+That command not only switches our ruby -v to be 1.9.3, but it also automatically switches our gem version to 1.8.5 because the two softwares are so interrelated.  You may have to reinstall your gems for this version if you only have them installed for another.  
+
+
+After that hassle is over with, we can create a new rails application.  
+[code]
+$  rails new myapp
+$  cd myapp
+$  bundle install # this installs dependancies, and is automatically run for version 3.2.x so redundant
+[/code]
+This powerful one liner will make tons of fantastic files in a directory named "myapp".
+These files all work in tandem to provide a thrilling, database experience across the web.  
+Just imagine all the amazing things we can do with these rails files we just created.  
+* We could produce a journalistic report on a recent headline (in a day!?  by 6:00PM!?!? how amazing!  And users could contribute input, and someone could administrate the story so ppl who want to follow stories will know exactly where to come to in order to see the latest developments!  This is an unfilled niche at the moment actually!)
+* We could create a social network to spy on members of the population and leak the details to the highest bidders (unfortunately, this market is cornered already...) 
+* We could create a website that allows people to buy stupid crap to make themselves feel whole (or less half as they are) in the society they're quite bound to.  
+* We could make a website for me to keep my flashcards on.  
+* We could develop a web application that allows me to store my notes online.  
+
+The sky is the limit with rails.  
+
+
+[size="4"]Step 2)  Setup the database[/size]
+[code]
+$  rails generate scaffold Hello hello:string
+[/code]
+Running that command will create "/myapp/db/migrate/Hello.rb"
+Open it up to see how it setup your databases using the active record statements (it's easy):
+
+(vi db/migrate/create_hellos.rb)
+[code]
+class CreateHellos < ActiveRecord::Migration
+  def self.up
+    create_table :hellos do |t|
+      t.string :hello
+
+      t.timestamps
+    end
+  end
+
+  def self.down
+    drop_table :hellos
+  end
+end
+[/code]
+Importantly, it also made...
+[code]
+app/models/hello.rb                  // "gives life" to your database
+test/fixtures/hellos.yml             // not sure what a fixture is yet...
+                                     // added a line to routes.rb "resources :hellos"
+app/controllers/hellos_controller.rb // "gives life" to url paths
+app/views/*...                       // determines the user interface when some1 browses to your app's model
+[/code]
+
+
+
+Then instantiate the database (everything in the migrate folder):
+[code]
+$  rake db:migrate
+[/code]
+That will have made all the database tables and columns that we specified in 
+create_database.rb
+
+
+[size="4"]Step 3)  Observe your work[/size]
+[code]
+$  rails server
+[/code]
+That will start rails' built in web server, WEBrick.  It sucks, but it's auto-functional.  
+When you have that running, paste the below code into a web browser of your choice.  
+[code]
+http://localhost:3000/hellos
+[/code]
+That will take use to our web application localhost (running on port 3000) and specifically,
+to our hello's 'view'.  There, we will see that we can create a New Hello by clicking a link.
+Once directed to localhost:3000/hellos/new you should see an input box.  
+Carefully type "Hello world!" into it and hit enter.  
+We did it!  We did a hello world in rails.  
+You can repeat the procedure by going 'back' to localhost:3000/hellos to create many hellos!
+They're all being stored in an sqlite database!  This is amazing!  To do this in raw PHP takes...
+Well, actually to do it in PHP it's not so bad, but we'll see in following tutorials why rails is so relatively powerful.  
+
+
+
+
+
+
+
+
+
+[size="4"]
+Revelation:[/size]
+You can now make changes to the database from the web interface we created!  
+Play around with it.  It should let you create new items, and even delete them.  
+
+At this point, it's pretty ugly, and pretty boring, and we aren't even talking about the .rb files that ruby automatically generated for us by our commands!  
+But if I type anymore in this tutorial, it will become too long, and too boring...  And now simply isn't the time for that, we should continue tweaking our system until it is powerful and lean.  [url="http://www.dreamincode.net/forums/blog/1662/entry-3495-day-65-configuring-nginx-to-serve-rails-apps/"]Are you eager to do just that?[/url]

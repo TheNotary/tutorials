@@ -1,0 +1,1 @@
+Git (Basic -> Intermediate): Manipulate and tidy up your commit history (git squash)

@@ -1,0 +1,127 @@
+So let's say you have a project that is so hawt, that you literally can't afford to let your trusty ISP see what you're working on.  I know everyone loves and trusts names like Comcast, and AT&T to do the right thing in every circumstance, no matter what, but that's beside the point.  Sometimes the project you're working on simply _feels_ so epic that it deludes you into a reality where you are the very k-raddist of the k-rad, and everyone else... is out to get your lucky charms.  You want CAPITAL_SECRECY.  Well, that's not technically possible if you're connected to the internet for extended periods of time with a private source operating system or are using a piece of networking gear with unverified origins (*cough* ebay *cough* 50% discounted Cisco equipment *cough* smelled a bit like solder when you first got it *cough*), but hey, let's just pretend that everything is hunky~dory in that department... and you are super-duper spy secret agent man!  
+
+You've probably already been looking at git for version control since you like to keep in touch with the latest trends in order to either benefit from them or ridicule their egregious flaws ([url="http://www.dreamincode.net/forums/blog/1668/entry-3782-code-collaboration-with-github-now-in-720p/"]if not see here[/url]).  
+
+For codesharing with git, the goto response is "github" of course.  Well, your central repository doesn't _need_ to be publicly available as an open source project at github.com.  In fact, it can be furtively tucked away at 192.168.1.3!  So let's get started!  
+
+There are two methods.  You only need to worry about the SSH method because the git protocol method is buggy and actually won't work if you're pushing from a windows machine.  Since I intend to move cshrp code, that method does me absolutely no good what so ever.  
+
+
+ref:  http://www.jedi.be/blog/2009/05/06/8-ways-to-share-your-git-repository/#gitdaemon
+
+
+:::::::::The SSH protocol method:::::::::
+The SSH protocol method is less buggy on windows machines, but is less efficient over the network (negligable over LAN).  
+
+My first step was to init the git repos for my C# code on my windows machine.  Then I initialized "bare" repositories on my linux machine.  Bare repositories are the only kind of repos that will accept push requests.  They don't have a working directory.  That means, to get the files out, you just clone the repository.  
+
+To setup a bare repository on my git [b]server[/b], I did...
+[code]
+$  mkdir my_project_folder; cd my_project_folder
+$  git --bare init
+[/code]
+
+Then on my windows [b]client[/b], in my code folder, I did...
+
+[code]
+$  git init
+$  git remote add origin ssh://USER@192.168.1.3/home/USER/dev/cshrp/my_project_folder
+$  git add .
+$  git commit -m "initial commit"
+$  git push -u origin master
+[/code]
+
+From there you can do the usual [inline]$  git push [/inline] and of course [inline]$  git pull [/inline] as you always could with github, only under this setup you may need to type your password to your personal "git server" for the user name USER.
+
+You can also clone to a second windows computer by...
+
+[code]
+$  git clone ssh://USER@192.168.1.3/home/USER/dev/cshrp/my_project_folder
+[/code]
+
+
+The only problem is that right now, it will probably ask you for your password.  That's annoying, but you can git rid of it by adding an entry to your .ssh/config file.
+
+(client computer's ~/.ssh/config)
+[code]
+Host servers_cute_name servers.address.com
+HostName servers.address.com
+User USER
+IdentityFile /home/USER/.ssh/servers_cute_name_rsa
+[/code]
+
+And don't forget to make that key on the client and transfer it over to your server.
+[code]
+# create the rsa key pair
+$  ssh-keygen -t rsa -b 2048
+
+# transfer the public key to the server which will put it in it's authorized_keys file for that user
+$  ssh-copy-id -i /path/to/key_rsa.pub username@server_ip
+# Supply the password for the server
+[/code]
+
+
+
+
+
+
+You can read about the git daemon protocol below if you'd like:  
+[spoiler]
+:::::::::The git protocol method (buggy on msysgit)::::::::
+So I wrote this tutorial on the git protocol before I realized msysgit was poorly maintained.  A bug was entered into the code involving the 
+
+On the computer you'd wish to use as your private git server:
+[code]
+$  cd YOUR_COOL_SOURCE_CODE_FOLDER #~~~ (with a working git repo already initialized)
+
+$  touch .git/git-daemon-export-ok  #~~~ This will allow the repo to be
+                                    #~~  read from remotely.
+
+$  git daemon --enable=receive-pack --base-path=.. 
+
+[/code]
+
+That's all you need to do to setup the server.  That last command will start the server, and it will just wait there until you hit ctrl+c, i'll explain more about it after.  
+
+On your client machine, do the following:  
+
+[code]
+git clone git://192.168.1.3/YOUR_COOL_SOURCE_CODE_FOLDER
+[/code]
+
+
+Walla!  You've just downloaded your source code on a client!  Very easy.  Now you can safely go back to your server and disengage your git daemon.  
+
+
+==================================
+Details, details, details
+==================================
+
+So, to start the daemon, it's quick a bulky piece of code:
+
+[code]
+$  git daemon --enable=receive-pack --base-path=..
+[/code]
+
+The [inline]--base-path=..[/inline] part just means, go up a directory from where we are, and make that the root.  If you omit this part of the command, you'll have to specify the absolute path to your repo, instead of that relative path.  
+
+[code]
+git clone git://192.168.1.3/absolute/path/to/your/repo
+[/code]
+
+
+The [inline] --enable=receive-pack [/inline] part gives everyone and anyone write access to your repo.  Dangerous, but teh sex, so keep it in otherwise you can't push to your repo.  The dangerous are that if anyone can guess your repo's folder name, guess when you will start the git server, and crack through port 9418, they could potentially mess with your codezstuffz so bare that in mind.  
+
+
+----Optionals----
+
+The [inline] --reuseaddr [/inline] only means that it should listen on the default git port even if something else already has the port open.  You probably won't need to use this switch, but just in case it's getting a shout out here.  
+
+The [inline] --export-all [/inline] chunk would seem to allow the export of git repos.  It seems somewhat dangerous so I haven't thrown it in.  
+
+The [inline] --verbose  [/inline] flag can be used to make the server console output more information.  
+
+
+but again, I should point out, msysgit is too buggy to work with the git protocol, so you'll need to use the ssh protocol instead.  
+
+[/spoiler]

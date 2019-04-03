@@ -1,0 +1,272 @@
+Ha, this information has been sitting on my desktop for a while.  Needless to say, it's grown beyond more than just 7 commands, but I like the title too much to change it.  Book mark and feel free to leave comments with commands you'd like referenced here also.  
+
+
+[size="4"]Working Using Linux[/size]
+[code]
+$  wget http://www.place.com/sourcecodez.tar.gz   #~~~ download something
+$  unzip bla.zip          #~~~ unzip a zip
+$  tar -zxvf bla.tar.gz   #~~~ unzip tar balls
+$  tar -cvzf file.tar.gz inputfile1 inputfile2   #~~~ put two files in tar bal
+$  rdate tick.greyware.com  #~~~ Update your system time
+[/code]
+
+
+[size="4"]Installing Packages (software)[/size]
+[code]
+$  apt-get update             # Updates apt-get's package list
+$  apt-get install PACKAGE    # installs "PACKAGE" onto your machine
+$  apt-cache policy PACKAGE   # Shows you what version of "PACKAGE" is installed
+$  apt-get -s install PACKAGE # Runs a simulation to show you what "would" happen
+[/code]
+
+[size="4"]File System/ Permissions[/size]
+
+[code]
+$  stat            #~~~ show file/folder status... read/write/etc...)
+
+$  chmod  755      #~~~change file permissions (worth googling a bit)
+
+$  chown username  #~~~ change owner of file
+$  chown -R username #~~~ change owner of folder, and all files/subfolders recursively
+
+$  sudo            #~~~ Switch user (defaults to admin) so you can install something
+[/code]
+Sudo, actually requires a little configuration before it will start working.  I have a feeling I logged this already, but just google.  I actually just login to root usually on my test machine since it doesn't really matter for test machines.  Or...
+
+[spoiler]
+($  visudo)
+[code]
+.
+.
+.
+root      ALL=(ALL)ALL
+user_name ALL=(ALL)ALL    # Add this for the user you'd like to enable sudoing for
+.
+.
+.
+[/code]
+
+[/spoiler]
+
+[size="4"]Bash related (the console thing)[/size]
+
+(read text files)
+As in catacomb, show the data deep with in the catacomb`esk file.  Dig it out, right out, onto our screen.  
+[code]
+$ cat
+[/code]
+[code]
+$  cat girls_phone_numbers.txt
+555-2343
+555-9628
+555-8013
+[/code]
+It's weird that they always start with 555.
+
+
+(Show current directory)
+[code]
+$ pwd     #~~~ Print Working Directory
+[/code]
+
+(search for occurrence of 'defaultroot' withing * (all) files in this directory)
+[code]
+$ grep -i 'defaultroot' *
+[/code]
+
+(find where nginx is on your system... I know it's here somewhere...)
+[code]
+$  whereis nginx
+
+$  which nginx
+[/code]
+
+History (of bash commands run)
+[code]
+$  history
+[/code]
+
+
+[size="4"]Network Stuff[/size]
+Display... open socket with a name reference of 'mysql'?
+[code]
+$  netstat -tap | grep mysql
+[/code]
+
+Check if something is in fact running on a port (eg port 10610)
+[code]
+netstat -a |grep LISTEN |grep 10610
+[/code]
+
+[size="4"][color="#A0522D"]Whoah!  What is that pipe symbol doing?[/color][/size]
+Notice we're using "piping" in both these commands.  When ever you use a pipe symbol [inline] | [/inline] you're actually taking the output from the command that came before, and 'piping it in' to the following command.  
+
+Piping is easier to understand if you already grasp the stadard input output system of command line systems.  And also know how to funnel the output of text into a file instead of a string.  
+
+Here is a basic ping example where I funnel the output from the ever popular "ping" command into a text file.  
+
+[code]
+$  ping google.com > output.txt
+
+(wait a couple seconds, then hit ctrl+c to terminate the ping command)
+[/code]
+
+then you will notice, in the current working directory, a file "output.txt".  And upon reading the files contents, you will understand that the greater than symbol sent then output from the command into a text file instead of letting it be displayed onto the screen.  
+
+[code]
+$  cat output.txt   #~~~ cat shows the contents of a file in terminal
+
+PING google.com (74.125.225.20) 56(84) bytes of data.
+64 bytes from ord08s05-in-f20.1e100.net (74.125.225.20): icmp_req=1 ttl=57 time=96.6 ms
+64 bytes from ord08s05-in-f20.1e100.net (74.125.225.20): icmp_req=2 ttl=57 time=96.1 ms
+64 bytes from ord08s05-in-f20.1e100.net (74.125.225.20): icmp_req=3 ttl=57 time=96.0 ms
+64 bytes from ord08s05-in-f20.1e100.net (74.125.225.20): icmp_req=5 ttl=57 time=123 ms
+
+--- google.com ping statistics ---
+5 packets transmitted, 4 received, 20% packet loss, time 4015ms
+rtt min/avg/max/mdev = 96.078/103.193/123.887/11.955 ms
+[/code]
+
+Another symboly thing to look out for is the backtick symbol [inline] ` [/inline].  When you see those symbols, they're basically running a second command, and then their output is placed into the command in which they occurred.  See below 'Proccess Commands' for a good example of what I mean.  
+
+
+[size="4"]Process Commands[/size]
+Linux has a task manager type of thing too of course.  But it's very loose, and odd.  I'll probably never know as much about it as I do about windows.  
+
+(list info about running processes, and show only things that have the word 'apache2' in them)
+[code]
+$  ps -A | grep apache2
+[/code]
+
+List all running processes owned by user_name. 
+[code]
+$  ps -u user_name
+[/code]
+
+(kill a process given it's pid.  Oh, and check in httpd.pid for the process id!)
+[code]
+$  kill -TERM `cat /usr/local/apache2/logs/httpd.pid`
+[/code]
+
+(beyond our comprehension for now.  Perhaps you shall leave a comment regarding your use of this 'folder' type of thing.)
+[code]
+$  ls /proc    #~~~explore away
+[/code]
+
+
+[size="4"]rm[/size]
+Woah, careful with this command, it will delete everything within webmin-1.210
+[code]
+$  rm -rf webmin-1.210/*
+[/code]
+
+
+this creates a shortcut link in the current directory to the destination from the symlink's path
+ln -s <destination file or directory> <name of the symlink> 
+
+
+
+
+[size="4"]echo[/size]
+
+You can print out 'server variables' (or what ever nix calls them), or just plain text.
+[code]
+$  echo $PATH
+$  echo "or just plain text\n"
+[/code]
+
+You can also pipe that output into a text file, which is what makes echo, an extremely profitable command.  
+
+[code]
+$  echo -e "PassengerEnabled On\nPassengerAppRoot $HOME/dev/mytest\n" > ~/dev/mytest/public/.htaccess
+[/code]
+
+(btw, .htaccess is an important configuration file)
+
+
+[size="4"]Backup your entire file system[/size]
+This is goona seem weird, but with linux (as root) you can read every file and write to EVERY file.  This means to backup your entire harddrive, you don't need to boot into an offline OS, you can simply copy all your files into a tar ball, and to restore you simply unpack the files and they'll be automatically overwritten.  The only catch is that some folders are 'virtual folders' and should be excluded from the backup process.  
+
+ref:  http://ubuntuforums.org/showthread.php?t=35087
+
+[b]Backup Command[/b]
+[code]
+$  tar cvpjf /backup.tar.bz2 --exclude=/proc --exclude=/lost+found --exclude=/backup.tar.bz2 --exclude=/mnt --exclude=/sys --exclude=/home/error.log / 2>/home/error.log
+[/code]
+
+[b]Restore Command[/b]
+[code]
+$  tar xvpfj /backup.tar.bz2 -C /
+[/code]
+
+Make sure you're logged in as root, and you're on the root directory just in case...  
+
+There is a more civilized way of doing backups, but that (bacula) deserves it's own blog entry.  
+
+
+[size="4"]alias[/size]
+If you get tired of typing out long commands, you can create an alias for that command.  Consider [inline]$  cd /etc/lib/nginx/conf[/inline]
+[code]
+$  alias cdngc='cd /etc/lib/nginx/conf'
+[/code]
+Now all you have to worry about is typing 'cdngc' to get to that pesky configuration folder.  Remember, unless you put this in your .bashrc, you'll have to recreate the alias every time you log in.  
+
+
+
+[size="4"]export[/size]
+   This is similar to typing 'path' on windows.  It shows you your variables...
+
+
+
+
+
+[size="4"]STARTUP SCRIPTS[/size]
+On linux machines, there's two important scripts that get run everytime bash is started.  
+~/.bashrc     - is exicuted for a specific user
+~/.profile
+
+/etc/bashrc   - is exicuted for ALL users
+/etc/profile
+
+Add a line like "cd /home/NAME/dev/rails" to one, and it will really help you out.
+
+Here's a very low level script file that starts when your system boots:
+/etc/init.d/bootmisc.sh
+
+More about init.d at: http://theos.in/desktop-linux/removing-unwanted-startup-debian-files-or-services/
+
+
+
+
+[size="5"]==SSH And Moving Files==[/size]
+
+TODO:  Find my ssh notes and move them here...
+
+Create and ssh identity key pair:
+[code]
+$  ssh-keygen -t rsa -b 2048
+[/code]
+
+Once you've created a keypair, you can remotely push it to the server you'd like to login to with it.  
+[code]
+$ ssh-copy-id -i ~/.ssh/id_rsa.pub username@server_ip
+# supply your password for the server
+[/code]
+
+ref:  http://serdaryildirim.net/server/setting-up-own-git-server-on-centos.html
+
+Sometime you need to ssh-add your key's manually so ssh knows to always use them as your host.  
+[code]
+$ ssh-add ~/.ssh/id_rsa
+[/code]
+
+This file is VERY important: http://syslog.tv/2010/02/18/howto-ssh-config-on-debian-ubuntu/
+
+There's so much I didn't know about with ssh that's really quite hard to learn about unless you just happen to stumble upon it.  You can read the man page for "ssh_config" to learn all about this wonderful file...  Looks like I need to rewrite some programs I've written in the past.  
+
+(~/.ssh/config)
+[code]
+Host servers_cute_name
+HostName servers_ip
+IdentityFile ~/.ssh/servers_rsa
+[/code]

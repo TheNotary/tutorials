@@ -1,0 +1,255 @@
+Preface:  
+I rant in this tutorial.  Lol, idk why, but it came out as a rant.  
+I actually hate it when people get 'emotional' about lame stuff like Operating Systems, but somehow I went astray.  
+There's no easy way to fix the rant either, it's like "embedded in the fiber" when I edit out the rant, the tutorial breaks entirely.  
+
+I think for me I've always been frustrated by the intentional deficiencies in most operating systems that I'm just hard to talk to about them.  
+As a web developer, I'm fully aware of the fact that windows has wanted to shutdown the web from day one due to the fact that it defeats platform compatibility issues that have plagued software engineers and consumers alike for many years now.  For those of you just tuning in, Microsoft has been capitalizing on the fact that they have attracted a *huge* market share of the consumer PC industry.  At this point, M$ has so much money that they can give their crippled versions of windows away with all new PCs that people by from the store.  That means when you or I try to build a PC, we have to dish out an extra $200 or so on buying their OS...  Or we have to steal it.  Then it occurs to us, "Oh, there are open source OSes available, and they are of a superior design, why not use them?" well... here's where software incompatibility comes in.  Most industry specific software vendors write their code for windows.  So the milk man who comes to your house and brings you milk, used his windows PC to run some windows software that made a time table for him so he knew today was the day he comes to your house.  Your milk man does not know about linux...  The customer sales reps at Radio shack don't know about linux...  Only the really cool reps at Best Buy know about linux.  That's why this situation happend.  The milk man's software sucks though.  His operating system sucks, and doing backups on his machines is needlessly painful.  Today is the day he's supposed to bring you milk.  But his windows PC crashed.  He has all the data because that's simple to backup, but he isn't able to bring up a running machine.  He needs to go to best buy and get a new computer.  He does.  It's got the latest version of windows, that isn't compatible with his old milk software.  Bottom line, no milk for a while bud... no milk for a while...  For this reason (and many others) I do not support Windows.  My tutorials spend zero time explaining GUI applications: where to move your mouse, what to click, what to drag, etc.  I just wanna show you this cool arduino stuff, and not have to exlpain and workaround the insufficiencies of the many alternative operating systems out there.  
+
+Rant.begin();
+
+
+Executive Summary:  
+In this hello world tut for Arduino, we're going to setup our software development environment, 
+and then we'll upload some code to our Arduino which tests that our hardware is working by blinking a built in light.  
+The emphasis on this tut isn't 'making it super easy for idiots to bumble around with their toys' in fact there are lots of other tutorials out there that take this aproach.  
+Instead, I'm going to show you how a legit professional does things.  
+You'll learn about many interesting, easy to use tools, but in the end, you'll actually know your shit after all this.  
+That's a better approach than just making lights blink, right?
+
+
+Software Development Environment
+
+Tools
+* Some type of linux - Prefer Linux Mint or Ubuntu (depending if you grew up with Windows or Mac)
+* git                - This is how you "save" changes to source code and share problems
+* python             - This is a dependency for some extremely useful tools
+* ruby               - This is a dependency for some extremely useful tools
+* gas2               - This configures your ssh keys for use with github.com
+* hub                - This allows you to create new repositories on github from the command line
+* bundlegem          - This tool creates project folders in one easy command
+* Platformio         - This is a build system for arduino that let's you compile your Arduino source code and upload it to your Arduino based device
+* minicom            - Discussed in serial section (run `sudo apt-get install minicom`)
+
+
+Equipment
+* Arduino Uno        - This is the most popular Arduino development board that let's you flash your chip and run it from USB
+* A PC               - This is what you use to run linux and connect your arduino to
+
+
+Sophisticated Operating System
+
+First off, you should at the very least dual boot linux and w/e you run right now.  
+Microsoft intentionally kills DIY and hacker movements because when people do things themselves and use open source software, Microsoft doesn't make as much money.  
+Microsoft intentionally has a terrible command line terminal to make people think that command line programs are inefficient and GUI programs are necissary.
+Software development is more productive and fun in Linux. 
+Software developed on other OSes tends to be done by less skilled programmers who are only managing by bumbling around GUIs, wasting the time of other's who have to put up with their low quality software.
+There are exceptions to this, but they hardly make up for the throngs of Microsoft programmers who let the industry guide them into learning software languages that limit them and constrain their users. 
+Windows is only remotely suitable for software development and so you should boot into linux unless your goal is to play video games.  
+And btw, those video games were done WRONG and that's why you need to buy DLC just to have a sense that you're playing a completed game.  
+The programmers run out of time (because they're doing it wrong) and are told to publish their unfinished game and then get back to work finishing it and releasing DLC to trick people into forgetting that the actual originally published game is valueless shit, swathed in bugs and doens't even match up with the features listed in the game's advertisments.  
+As an aside, Mac is not a viable alternative to Open Source Operating Systems.  
+
+Ok, now that I've won everyone over to linux with my staunch diplomacy, we can begin a much more humble adventure into Arduino software development.  
+
+It isn't recommended that you simply use a VM because you need to have access to the USB device in order to program an Arduino unit.  It's better to either buy a dedicated linux software development system (a Raspberry Pi would make a lot of sense).  
+
+TODO: 
+- udev rule for adafruit
+- add user to dialout
+- minicom
+- test
+
+
+## Git
+
+Git is a category of software development tool known as version control system.  It basically let's you test new changes to your code (ie develop software) without having to fear that your new changes will break your software and the developer having no way of restoring the system to a working state.  If you're a beginner in software, git is more essential than it is to seasoned professionals.  And seasoned professionals would never consider working on anything more than a 20 line script without using some kind of version control system to track their work.  
+
+#### Install Git
+
+    $  sudo apt-get install git
+
+
+You don't NEED to put your code online in open source repositories, and children often resist this because they have very high expectations of getting rich by selling their beautiful code and ideas (yes even before they know how to program with objects and classes) but generally, making your code available online is a good idea because it makes it that much easier to get help from people online.  That's what you want right?  You want to learn how to program and share?  There are some young software people who will try to keep their ideas and source code to themselvs and not share anything, leaching off of the internet what they can and giving nothing back.  If that's the kind of sofware person you believe yourself to be, then you don't need to finish this section.
+
+#### Creating a Github Account
+
+github.com is a website that offers to host your source code online in exchange for the fact that you're making your source code 'open source' and publicly available for others to assist and learn from you.  That's a pretty sweet deal.  You can put your code up there to show it off, or to ask for help, or simply to keep a backup copy.  If you don't document your code, no one's going to notice you or piece through your code to see what it does...  It takes a lot of effort to get people to notice your ideas.  
+
+Just go to their website, and create a new account with a snazzy username.  You don't even need to confirm your email right away which is great!
+
+
+
+#### Installing gas2 and hub to Make using Github Easier
+
+To upload code to your new github account, you need to create ssh keys and put them up there and also keep one on your home computer.  `gas` is a command line application that can handle that rather tricky business for you.  And `hub` is a command line application that allows you to create new `repositories` on github which are folders of code.  You need ruby to install each of these tools.  
+
+First check that ruby is installed, and install it if needed.  Most sophisticated operating systems come with it installed by default.  
+
+    # check ruby is installed.  If not, do `sudo apt-get install ruby`
+    $  ruby -v
+    ruby x.x.x
+    
+    $  gem install gas2  # you need gas2, I'll fix that someday....
+    ...
+    n gems installed
+    $  gas --help
+    Tasks:
+      gas add NICKNAME NAME EMAIL  # Adds author to gasconfig
+      gas delete AUTHOR            # Deletes author
+      gas help [TASK]              # Describe available tasks or one specific task
+      gas import NICKNAME          # Imports current user to gasconfig
+      gas list                     # Lists your authors
+      gas show                     # Shows your current user
+      gas ssh                      # Creates a new ssh key for an existing gas au...
+      gas use AUTHOR               # Uses author
+      gas version                  # Prints Gas's version
+    
+    $  gas add nickname name name@example.com
+    Do you want gas to handle switching rsa keys for this user?
+    [Y/n]
+    <ENTER>
+
+    Generate a brand new ssh key pair?  (Choose 'n' to use key in ~/.ssh/id_rsa)
+    Default: 'y'
+    [Y/n]
+    <ENTER>
+    
+    Generating new ssh key...
+    Gas can automatically install this ssh key into the github account of your choice.  Would you like gas to do this for you?  (Requires inputting github username and password)
+    [Y/n]
+    <ENTER>
+    
+    Type your github.com user name:
+    User: <INPUT YOUR GITHUB.COM USERNAME YOU MADE IN ABOVE STEP>
+    Type your github password:
+    Password: 
+    <INPUT YOUR GITHUB.COM PASSWORD, IT WON'T DISPLAY ON SCREEN>
+
+    authenticated
+    Posting key to GitHub.com...
+    Key uploaded successfully!
+    Added new author
+          [nickname]
+             name = name
+             email = name@example.com
+    
+    $  gas use nickname
+    Current user:
+    nickname <name@example.com>
+    
+
+Ok, wow, that's a lot of text I had to paste up there...  
+basically just go with the default options and follow along with the command line wizard.  
+It's a pretty simple app.  
+The configs are visible in `~/.gas` if you want to take a peak at them.  
+It basically created an RSA key, and put it in the `~/.gas/` directory and told your ssh-agent to notice that key when connecting to github.com
+If you messed up and did something wrong, you can delete the `~/.gas` folder and try again =)
+
+
+Now let's get hub installed and test it.  
+
+    $  gem install hub
+    ...
+    n gems installed
+    
+    $  mkdir -p /tmp/hub_test
+    $  cd /tmp/hub_test
+    $  echo 'hello github.com' > hello.txt
+
+That created a little project folder named hub_test... It won't clutter your file system up since we put it in the /tmp folder, it will be deleted on system reboot.  
+Now we need to make that folder a git repository, and make the initial commit.  
+
+    $  git init
+    $  git add .
+    $  git commit -m "initial commit"
+
+Now we've used git for the first time!  Awesome!  You'll type the above commands many times in the future.  
+I'll explain the git commands later, for now we're just testing hub though.  
+At this point, we can try to use hub to create a remote repository.  
+
+    $  hub create
+    github.com username: <GITHUB.COM USERNAME>
+    github.com password for adearuser (never stored):  <GITHUB.COM PASSWORD>
+    Updating origin
+    created repository: UserName/hub_test
+    
+    
+Great!  
+You only need to input your username and pass for github.com once for this app and access tokens will be stored in ~/.config/hub for later.  
+The above command, `hub create` logged into your github.com account and created a repository for you.  
+You could have done this manually by navigating to github.com, but that's kind of a nubish thing to do these days...
+Now you can push your code to your new, effortlessly created repo, which will allow you to easily deploy it to other machines or simply share the code and collaborate with others online!
+
+You know... now would be a pretty good time to show you the UI for github.  
+Open a web browser and navigate to `github.com/YourUserName/hub_test` 
+That URL will work if you plug in your user name, and whatever you named the test folder.  
+
+What do you see?  Probably something giving you a lot of instructions.  You see... it's an empty repository you've created.  Those are pointless, you need to fill it with some source code!  So let's push our project folder up there!
+
+    $  git push -u origin master
+    Counting objects: 3, done.
+    Writing objects: 100% (3/3), 223 bytes | 0 bytes/s, done.
+    Total 3 (delta 0), reused 0 (delta 0)
+    To git@github.com:aDearUser/hub_test.git
+     * [new branch]      master -> master
+    Branch master set up to track remote branch master from origin.
+  
+Now refresh the page and you'll see your project folder!!!!  
+That's awesome!  
+They didn't even have shit like this when I was a kid!
+I'm super-duper old, yay, yay, yay!
+
+Ok, we typed a lot of commands up there.  
+You might be thinking "woah... wtf... I don't wanna have to remember a million obscure commands..."
+But don't worry, they only feel obscure because I haven't explained them yet.  
+All we're doing is testing `hub` and `gas`, that's it!  And it worked!  
+
+Now in github.com, you can feel free to delete the repository since we're done with it (settings button, then scroll down to "delete the repository" section).  
+
+
+
+## Bundlegem
+
+Bundlegem is a project folder generator.  
+It can be used to create source code folders for multiple langauges.  
+We're going to use it to start our Arduino projects.  
+
+Bundlegem is another ruby gem, so you'll install it using ruby's package manager, `gem`.  
+    
+    $  gem install bundlegem
+
+
+You use bundlegem like this
+
+    # I'm just moving to the tmp folder to practice, you should too, it's deleted on reboot
+    $  cd /tmp
+    
+    $  bundlegem hello_world -t arduino
+    $  cd /tmp/hello_world
+    
+That `-t arduino` option tells bundlegem to create a project folder based on the arduino template.  
+
+
+
+
+
+## Platformio
+
+
+
+# Hardware Test
+
+At long last, if you've gotten this far, you've successfully setup an extremely powerful development environment.  
+It's time to put all those tools to work in an effective workflow.  
+
+
+
+
+
+#Summary
+
+If you've ever programmed in another language, you've likely had fun doing the hello world example because you were able to print a string to the screen, and after learning that, you immediately knew how to print *any* string to the screen.  This gives you a feeling of control and power.  But in the Arduino hello world, we were not able to print a string to the screen, we blinked a light.  That likely made you feel weak in that there are only 2 states to a light, on and off.  This is why I think of Arduino's hello world more as a "hardware test," but don't sell your power with Arduino short just yet.  You in fact do have power, you can control the speed of blinking, and how long to be on for.  Play around by creating interesting blink patterns.  Perhaps short-short-long-rest-rest will be interesting enough of a pattern to make you feel good enough to move on.   
+
+
+

@@ -1,0 +1,266 @@
+=Running C# code on debian linux
+
+Well, since I've got over two thousand C# applications coded on my windows PC, let's see about putting them to use on my debian system.
+Thanks to a project named mono, this is easy!  
+
+We may as well see a glimps of mono on a windows PC.  This can be done by 'C:/'
+
+::  WINDOWS PORTION (optional) ::
+
+Download mono so you can compile .cs for the mono/.NET runtime:
+[code]
+http://www.go-mono.com/mono-downloads/download.html
+[/code]
+
+Optionally, you can try installing the debugger in visual studio 2008 or 20010 (not discussed here)
+[code]
+http://mono-tools.com/download/
+[/code]
+
+Once you've installed mono, you'll end up with a directory with tons of binary files that let you work with mono.  For me, it was:
+[code]
+c:\program files(x86)\mono-2.6.7\bin
+[/code]
+Add that to your windows environment path (not discussed).  Once you've done that, you can type a simple command to compile your first c# app in mono!
+
+[code]
+(Open a windows command box... not discussed)
+gmcs hello.cs
+[/code]
+After running the above command, you will find hello.exe located in the same directory that you ran the command from IF AND ONLY IF you wrote hello.cs.  Luckily, I have hello.cs and I can share it here:  
+
+(hello.cs)
+[code]
+using System;
+using System.Diagnostics;
+
+
+public class HelloWorld
+{
+    static public void Main()
+    {
+        Console.WriteLine("We're going to do matrix multiplication!");
+
+        double[,] A = MakeMatrix(1000);
+        double[,] B = MakeMatrix(1000);
+        Console.WriteLine("Please Wait To Be Seated");
+        Stopwatch timing = new Stopwatch();
+
+        timing.Start();
+        MMult(A, B);
+        timing.Stop();
+
+        Console.WriteLine("We're done in:  " + timing.Elapsed);
+        Console.Read();
+    }
+
+    public static double[,] MakeMatrix(int size)
+    {
+        double[,] matrix = new double[size, size];
+        Random randNum = new Random();
+
+        for (int i = 0; i < matrix.GetLength(0); i++)
+        {
+            for (int j = 0; j < matrix.GetLength(1); j++)
+            {
+                matrix[i, j] = randNum.NextDouble();
+            }
+        }
+
+        return matrix;
+    }
+
+    public static double[,] MMult(double[,] matrixA, double[,] matrixB)
+    {
+        int n = matrixA.GetLength(0);  //rows
+        int m = matrixA.GetLength(1);  //columns
+        int a = matrixB.GetLength(0);  //rows
+        int b = matrixB.GetLength(1);  //columns
+        double[,] MM = new double[n, b];
+
+        if (m == a)
+        {
+            int k = 0;
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < b; j++)
+                {
+                    while (k < m)
+                    {
+                        MM[i, j] += matrixA[i, k] * matrixB[k, j];
+                        k++;
+                    }
+                    k = 0;
+                }
+            }
+            return MM;
+        }
+        else
+        {
+            //MatrixDimensionsException ex = new MatrixDimensionsException(DateTime.Now,
+            //    "Columns of the first matrix is not equal to the rows of the second matrix!",
+            //    "Matrix-Multiplication Error Message");
+            throw new Exception("life sucks");
+        }
+    }
+}
+[/code]
+
+After that, run the thing.  
+
+Ok, if you really wanna set up a mono development environment on a windows PC, you can set up the IDE.  That means.
+
+Install:
+-.NET Framework 3.5
+-Gtk#
+-MonoDevelop 2.4.2
+
+The links can be found here:
+[code]
+http://monodevelop.com/Download
+[/code]
+
+:::::::  /END OF WINDOWS PORTION
+
+
+
+
+
+
+
+
+::     LINUX PORTION
+Now lets get serious and install the stuff on our linux machine through our friendly SSH console.  
+
+
+::  SETUP
+
+[code]
+apt-get install monodevelop
+[/code]
+
+Great, now you've got, not only an IDE, but also a mono compiler.  
+
+
+
+:: COMPILING
+
+Let's write our first C# program on debian:
+
+(obvious?  Put the .cs into your clipboard first.)
+[code]
+$  vi hello.cs
+<hit insert>
+<Copy hello.cs into your clipboard>
+<right click on the putty window to paste>
+<hit esc>
+<hit : w q >
+<hit enter>
+[/code]
+
+Below is the code you should have pasted into your Linux SSH connection.  
+
+(hello.cs)
+[code]
+using System;
+using System.Diagnostics;
+//using Mono.Simd;
+
+
+public class HelloWorld
+{
+    static public void Main()
+    {
+        Console.WriteLine("We're going to do matrix multiplication!");
+
+        double[,] A = MakeMatrix(1000);
+        double[,] B = MakeMatrix(1000);
+        Console.WriteLine("Please Wait To Be Seated");
+        Stopwatch timing = new Stopwatch();
+
+        timing.Start();
+        MMult(A, B);
+        timing.Stop();
+
+        Console.WriteLine("We're done in:  " + timing.Elapsed);
+        Console.Read();
+    }
+
+    public static double[,] MakeMatrix(int size)
+    {
+        double[,] matrix = new double[size, size];
+        Random randNum = new Random();
+        
+        for (int i = 0; i < matrix.GetLength(0); i++)
+        {
+            for (int j = 0; j < matrix.GetLength(1); j++)
+            {
+                matrix[i, j] = randNum.NextDouble();
+            }
+        }
+
+        return matrix;
+    }
+
+    public static double[,] MMult(double[,] matrixA, double[,] matrixB)
+    {
+        int n = matrixA.GetLength(0);  //rows
+        int m = matrixA.GetLength(1);  //columns
+        int a = matrixB.GetLength(0);  //rows
+        int b = matrixB.GetLength(1);  //columns
+        double[,] MM = new double[n, b];
+
+        if (m == a)
+        {
+            int k = 0;
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < b; j++)
+                {
+                    while (k < m)
+                    {
+                        MM[i, j] += matrixA[i, k] * matrixB[k, j];
+                        k++;
+                    }
+                    k = 0;
+                }
+            }
+            return MM;
+        }
+        else
+        {
+            //MatrixDimensionsException ex = new MatrixDimensionsException(DateTime.Now,
+            //    "Columns of the first matrix is not equal to the rows of the second matrix!",
+            //    "Matrix-Multiplication Error Message");
+            throw new Exception("life sucks");
+        }
+    }
+}
+[/code]
+
+
+Ok, after you've got your lovely C# code in place, compile it:
+[code]
+$  gmcs hello.cs
+[/code]
+
+now run it (it will take a minute on coputers from 5yrs ago or prior.  Hit ctrl+C or ctrl+D to exit if you get bored.
+
+[code]
+$  ./hello.exe
+[/code]
+
+(notice it's an exe file!  How familiar!  You could email this to your windows machine and run it there too!)
+
+
+It's notable that the mono runtime is heavily optimized for the linux platform, and runs comperably to the .NET runtime in terms of efficiency.  But on windows, they kinda don't care, so it's usually best to use the MS .NET runtime on windows systems.  
+There are differences in the algorhithms for compiling too.  I've compiled one app on windows using mono so far, and it runs faster than the one compiled by MS's .NET (twice as fast, oddly).  Weird I know, I looked at the opcodes, and they differ ever so slightly in like two places and the lables are different.  I didn't look too deeply into it, just an odd thing to be aware of (cause it could just easy go the other way so be careful with time critical stuff).  
+
+Oh, also, just a note, to "add a reference" to a C# app, compile with this...
+
+[code]
+$  gmcs /r:Mono.Simd hello.cs
+[/code]
+The IDE can do that for you too, btw.

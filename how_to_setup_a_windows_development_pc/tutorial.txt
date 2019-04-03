@@ -1,0 +1,21 @@
+1)  First you need to get powershell 2.0 on your system.  This allows you to do cool, linux style installations using chocolatey.  
+
+http://www.johndcook.com/blog/2009/11/02/powershell-2-0-for-windows-xp-etc/
+
+
+2)  Then you need to install boxstarter so you can run their boxstarter.bootstrapper powershell script which installs .NET 4.0 and chocolatey (the secret windows package manager)...
+
+http://boxstarter.codeplex.com/releases/view/103296
+
+
+3)  
+
+
+
+
+
+
+
+
+
+

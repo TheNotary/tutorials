@@ -1,0 +1,227 @@
+This post is a part of a mini-series!
+[size="4"]Day 6[/size]
+1)  [color="#8B0000"]Installing  [url="http://www.dreamincode.net/forums/blog/1662/entry-3490-day-6-installing-rails-gem-rvm-etc/"]link[/url][/color]
+2)  [color="#8B0000"]Test a Rails App!  [url="http://www.dreamincode.net/forums/blog/1662/entry-3487-day-63-rails-application/"]link[/url][/color]
+3)  [color="#8B0000"]Configuring Webserver  [/color] [url="http://www.dreamincode.net/forums/blog/1662/entry-3495-day-65-configuring-nginx-to-serve-rails-apps/"]link[/url]
+4)  [color="#8B0000"]Configuring MySql  [/color] (You Are Here)
+
+
+Ok, sqlite is only for non-high volume traffic.  So let's switch to using MySql.  The first step is to install MySql, which you can see how is done here.  
+
+Then comes the configuration:
+1)  Create a MySql user
+2)  Create the 3 MySql databases for your project
+3)  Create your rails app to use mysql as the database
+4)  Configure your database.yml
+
+
+So a little over a month ago, Martyr2, here on the forums, really helped me out with some pointers and advice on MySql, and this blog will have that post to give reference and credit.  
+ref:  http://www.dreamincode.net/forums/topic/227548-could-not-find-gem-sqlite3-0-in-any-of-the-gem-sources-listed/
+
+
+To complete this tutorial, you obviously [b]need MySql installed[/b], so if you haven't already seen it, check out that section in [url="http://www.dreamincode.net/forums/blog/1662/entry-3419-day-2-installing-mysql-a-web-server-named-nginx-and-php-in-debian-and-terrible-vi-notes/"]my walk though for installing MySql[/url] (it's the third section down).  
+
+
+[size="4"][b]::  Configuring MySql[/b][/size]
+
+log into mysql:
+[code]
+$  mysql -u root -p
+[/code]
+
+
+1)  Create the databases for your rails project
+[code]
+mysql >  CREATE DATABASE mt_development;
+mysql >  CREATE DATABASE mt_test;
+mysql >  CREATE DATABASE mt_production;
+[/code]
+Hint:  The command [inline]$  rake db:create:all[/inline] will do this for you automatically if the user specified in your database.yml file has database creation privs.  
+
+2)  Setup the user account to have access to those databases
+[code]
+mysql >  CREATE USER 'user1'@'localhost' IDENTIFIED BY 'fakepass';
+mysql >  GRANT ALL ON mt_development.* TO user1@localhost IDENTIFIED BY 'fakepass';
+mysql >  GRANT ALL ON mt_test.* TO user1@localhost IDENTIFIED BY 'fakepass';
+mysql >  GRANT ALL ON mt_production.* TO user1@localhost IDENTIFIED BY 'fakepass';
+mysql >  exit
+[/code]
+
+3)  Test
+[code]
+$  mysql -u user1 -p
+
+mysql >  show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mt_development        |
+| mt_production         |
+| mt_test               |
++--------------------+
+4 rows in set (0.00 sec)
+
+mysql >  use mt_test;
+Database changed
+
+mysql >  CREATE TABLE myTable (column1 TEXT);
+Query OK, 0 rows affected (0.03 sec)
+
+mysql >  show tables;
++----------------+
+| Tables_in_test |
++----------------+
+| myTable        |
++----------------+
+1 row in set (0.00 sec)
+
+
+[/code]
+
+Now lets undo what we did.  
+[code]
+mysql >  DROP TABLE myTable;
+mysql >  show tables;
+Empty set (0.00 sec)
+
+mysql >  exit
+[/code]
+
+
+If that all went well, then you now have a solid database structure setup on your machine to be used with your rails application named 'mt' ('my test' I guess).  
+
+
+
+[size="4"][b]::  Configure a Rails App for MySql:[/b][/size]
+
+Make a new rails app using mysql, and install mysql2 gem if necessary/desirable:
+[code]
+$  gem install mysql2
+$  gem install mysql2 -v 0.2.7    ~~~ The latest version happens to be bugged...
+$  gem install rails
+
+$  rails new mt -d mysql
+$  cd mt
+$  cat config/database.yml
+
+#
+# Install the MySQL driver:
+#   gem install mysql2
+#
+# And be sure to use new-style password hashing:
+#   http://dev.mysql.com/doc/refman/5.0/en/old-client.html
+development:
+  adapter: mysql2
+  encoding: utf8
+  reconnect: false
+  database: mt_development
+  pool: 5
+  username: root
+  password:
+  host: localhost
+
+# Warning: The database defined as "test" will be erased and
+# re-generated from your development database when you run "rake".
+# Do not set this db to the same as development or production.
+test:
+  adapter: mysql2
+  encoding: utf8
+  reconnect: false
+  database: mt_test
+  pool: 5
+  username: root
+  password:
+  host: localhost
+
+production:
+  adapter: mysql2
+  encoding: utf8
+  reconnect: false
+  database: mt_production
+  pool: 5
+  username: root
+  password:
+  host: localhost
+[/code]
+That thing that we catted is what let's us customize our database.  Change the username to [inline]user1[/inline], the password to [inline]fakepass[/inline] and make sure the database names have been given the same names as those you created in the earlier steps.  Then you should be good to go.  
+
+[b]Due to a bug[/b] we must make sure our Gemfile requires mysql2 version 0.2.7 or less:
+(vi Gemfile)
+[code]
+...
+gem 'mysql2', '~> 0.2.7'  # added the version specifier to this line
+...
+[/code]
+
+Now you'll need to install that gem bundle just in case it's not already installed:
+[code]
+$  bundle install
+[/code]
+
+Because of a bug, you [b]MUST NOT[/b] use the latest version of ruby.  If you are coming from a windows background, this might seem counter intuitive, but in the open source community, progression moves backwards.  Every time a new version is released, it means there are more bugs in it, and fewer bugs in prior releases :detective: .  
+[code]
+$  rvm 1.8.7
+[/code]
+
+Make a model
+[code]
+$  rails g scaffold Hello hello:string
+[/code]
+
+Bring the database up for all your models:
+[code]
+$  rake db:migrate
+[/code]
+
+Test it out:
+[code]
+$  rails s
+[/code]
+
+[color="#808080"]Troubleshooting:
+"warning: already initialized constant RAKEVERSION"
+You will get a whole ton of bugs that contain that sort of text if you try to rake your application using ruby version 1.9.2.  Use [inline]rvm use 1.8.7[/inline] and then proceed with the raking.  Afterwards, you may switch back to [inline]rvm use 1.9.2[/inline] [/color]
+
+If that goes over ok, you should be able to go to [inline]http://localhost:3000/hellos[/inline] and see your application.  Try using the CRUD interface to really test that mysql is working.  
+Create a "hello" with the string "hello world of pain" using the html interface of your rails app.  
+
+
+
+Then, meet me in mysql to check for that data in your development database.  
+[code]
+$  mysql -u user1 -p
+:fakepass
+mysql >  use mt_development;
+mysql >  show tables;
+
++--------------------------+
+| Tables_in_mt_development |
++--------------------------+
+| hellos                   |
+| schema_migrations        |
++--------------------------+
+2 rows in set (0.00 sec)
+
+mysql >  SELECT * FROM hellos;
+
++----+----------------------+---------------------+---------------------+
+| id | hello                | created_at          | updated_at          |
++----+----------------------+---------------------+---------------------+
+|  1 | hello world of pain  | 2011-06-05 11:49:24 | 2011-06-05 11:49:24 |
++----+----------------------+---------------------+---------------------+
+1 row in set (0.00 sec)
+
+[/code]
+
+Fantastic!  It's showing that for me, because on the html side of my rails app, I created that 'hello' with the message "hello world of mysql".  
+
+I hope this little exercise helped to tie everything together.
+
+Oh yeah, before you go, try it out with the nginx server we setup in the last post.  It's OK to use version 1.9.2 now:
+[code]
+$  rvm 1.9.2
+$  /etc/init.d/nginx restart
+$  /etc/init.d/thin start
+[/code]
+[inline]http://localhost/hellos[/inline]

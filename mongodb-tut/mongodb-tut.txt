@@ -1,0 +1,22 @@
+There are two ways to use mongoDb, you can either install it on your own dev system, or you can get a free acount at mongolab.com and setup the database in the "cloud".  
+
+Here's a usecase of mongoid:  
+http://railscasts.com/episodes/238-mongoid?view=comments
+
+
+Here's the mongolab.com path:
+
+Setup an account, and connect your app to your mongolab db.  
+http://help.nitrous.io/mongodb/
+
+Don't forget to create a test db too.  
+
+
+Learn how to manually remove all the ActiveRecord stuff so you don't throw errors:
+http://docs.mongodb.org/ecosystem/tutorial/getting-started-with-ruby-on-rails-3/
+
+Learn how to test with rspec:
+http://railsapps.github.io/tutorial-rails-mongoid-devise.html
+
+
+

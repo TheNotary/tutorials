@@ -1,0 +1,112 @@
+In this tutorial we'll be setting up an Android Development Environment.  By the end of this tutorial, we will have our Debian based linux computer setup to program Android apps and test them out in an android emulator.  
+
+
+So for starters, there's lots of shit you need to download.  Android development pretty much sucks.  
+
+We will need:
+- Android Studio (http://developer.android.com/sdk/installing/studio.html)
+- Android SDK (http://developer.android.com/sdk/index.html)
+- Git
+
+%h2 About Dat Shit
+%div
+
+  %h3 Android Studio
+  %p Android Studio is our IDE, so it lets us view all our .xml files (which constitute the user interface) and also our .java files (which constitute our code).  
+    The IDE also has integrates with our Android emulator which allows us to test out our code without having to load our app onto an Android device.
+  %p  
+    Loading the code you write onto an actual android device constitutes a security threat, google/NSA will essentially have a copy of your code and be able to find you by finding your billing info and your location metadata.  
+    If you build anything truely good, don't put it on your own phone ever.  
+    
+    
+  %h3 Android SDK
+  %p
+    The SDK is basically the software that allows you to compile android code, start an emulator, download different Android API versions and emulator images.  
+
+
+  %h3 Git
+  %p 
+    Git is quite simply the best thing ever.  
+    It allows you to share your code, back it up properly, and also do refactoring without bad feelings developers used to have about modifieing existing code.  
+    For the purposes of this tutorial, you don't actually need to install git though, only if you're working directly with me will you need to do this.  
+
+
+%h2 Install Dat Shit
+%div
+  %h3 Android Studio
+  %p 
+    Just go to the links I provided for Android Studio and Android SDK and download the proper zip (http://developer.android.com/sdk/installing/studio.html).  You can unzip Android Studio anywhere, perhaps ~/bin/android_studio will suit you.
+
+  %h3 Android SDK
+  %p
+    DL from http://developer.android.com/sdk/index.html.  The Android SDK should be unzipped *exactly* in your home folder (eg. '~/android-sdk-linux').  Your bash startup script will be edited silently by something...  Not sure what, but you may need to manually add the SDK to your environment path so you can use the programs in the SDK without having to be in the SDK folder.  
+    
+  %pre{class: 'code'}
+    # Android tools
+    export PATH=${PATH}:~/android-sdk-linux/tools
+    export PATH=${PATH}:~/android-sdk-linux/platform-tools
+    .
+    .
+    .
+
+
+
+%h2 Configure SDK Manager
+%div
+
+  %p
+    We need to download a bunch of API garbage from android now.  
+    Android has multiple versions of it's phone OS.  
+    Not all phones are capable of running the latest version of android.  
+    Thus when we choose to develop an Android app, we need to choose which version of Android to target, keeping in mind our marketing reach and also our API feature availability.  
+    So just ignore that last sentence and always use API 10.  
+    
+  %p
+    To install API 10, we need to start SDK Manager
+
+
+
+
+
+%h2 Test your Code
+%div
+  
+  %p
+    Here's where shit really goes to hell.  To test out your code, push the button with the bug on it in your IDE.  
+    Then you'll be prompted to select which phone image you'd like to run in the emulator.  
+    You'll have nothing in the list view if you didn't create a phone image yet.  
+    r emulator will boot up and then you get to have the supreme displeasure of navigating a bull shit Android device.  
+
+
+
+%h1 Clever Commands
+
+$  android list avd  - List all Android emulator images you've got installed
+
+$  emulator @my_droid   - Start an emulator loading the image named 'my_droid'
+
+$  adb install my_app.apk   - Installs an app on a running emulator
+
+$  adb install -r my_app.apk   - Re-Installs an app... ikr?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

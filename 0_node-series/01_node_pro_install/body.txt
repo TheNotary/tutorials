@@ -1,0 +1,8 @@
+First a note.  Most people just hack through to get node and npm on their system cause it looks good in front of friends, co-workers, and prospective new employers.  But you should NOT require sudo every time you install a node package (sadly, this is a default situation node puts you in as a hasty developer).  
+
+
+
+
+
+
+

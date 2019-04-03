@@ -1,0 +1,27 @@
+Keep dumb stuff out of your git repo by adding it to your "git ignore" file!
+$  vi .gitignore
+(.gitignore)
+[code]
+database.yml
+[/code]
+
+
+What if it's too late and you already added something that you need to get out?
+
+Remove sensative data from github
+ref:  http://help.github.com/remove-sensitive-data/
+To permenently delete and Erase the history of:
+  "config/database.yml"
+
+$  git filter-branch --index-filter 'git rm --cached --ignore-unmatch config/database.yml' HEAD
+
+$  git push origin master --force
+
+Sometimes you need to force it:
+git filter-branch -f --index-filter 'git rm --cached --ignore-unmatch log/development.log' HEAD
+
+
+git filter-branch -f --index-filter 'git rm --cached --ignore-unmatch lib/tasks/sample_data.rake' HEAD
+
+
+$  git push origin master --force

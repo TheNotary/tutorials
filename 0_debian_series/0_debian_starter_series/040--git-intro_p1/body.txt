@@ -1,0 +1,127 @@
+Well... now that we're coding and compiling on this thing, we'd better come up with some way of tracking the history and progress of our source code.  
+I mean... one false line of code and we might destroy our entire application, and we don't even know how to make backup copies.  Hmmm... what to do...  I know!  
+
+[code]
+git
+[/code]
+
+Oh, it looks like it's not installed, git: the version control software that allows you to work on source code with large groups of people with out having to worry about stepping on anybodies toes or the constant addling of a dense central control system.
+The git philosophy is to no longer be reliant on a central server and instead, shift version control to be a more distributive, separable environment.  
+
+Awesome, some nerdy kid tells us about how perfect it is via youtube!  
+[code]
+Video:
+http://www.youtube.com/watch?v=4XpnKHJAok8
+[/code]
+
+:: Install git on debian
+
+Well, let's follow the below tutorial and make comments on how things went.  
+
+[code]
+reference tut (install and use git):
+http://linux.koolsolutions.com/2009/08/07/learn-git-series-part-1-installing-git-on-debian/
+[/code]
+
+That first part of his series was amazing!  What a good tutorialist.  
+
+Here's the summary:
+[code]
+apt-get install git-core
+[/code]
+
+But, when you turn the page, he does things wrong =(  He starts talking about apache server.  We don't want anything to do with that technology, so we'll need to look elsewhere.  
+
+[code]
+reference tut (install html interface for git):
+http://perevillega.com/install-trac-using-nginx-and-git
+[/code]
+
+Looks like this guy wants us to install another database engine along side mysql and do a whole bunch of crap...  Let's put this off till another day.  I want to dive into how git works, and that means we need to work on our project on a public git server.  
+
+
+:: Install git on windows (optional)
+Before we jump into a server, let's get our windows machine situated with git.  I love working on my PHP script with my windows laptop.  I don't know why.  
+
+[code]
+ref:  http://help.github.com/win-set-up-git/
+Download:  http://code.google.com/p/msysgit/downloads/list
+(just DL the beta, they really are needy at git for some reason)
+[/code]
+
+
+:: github
+github.com is a website that lets you share your git repositories on the web.  It handles extra cool features like "pull requests" and stuff, that help make sharing code fun and easy.  
+
+Let's start a repository on github!
+Below is a good video, but it's slightly out dated.  Follow along with him until you get the error.  
+ref:  http://www.youtube.com/watch?v=TPY8UwlTIc0
+
+He has you do the following pretty much (in a directory you'd like to post to github):
+
+(setup your git name and email on your computer)
+[code]
+$  git config --global user.name "Your Name"
+$  git config --global user.email Your@email.com
+$  git config --list
+[/code]
+
+(initialize the git repo)
+[code]
+
+$  git init   // start a new git repository in this directory (it makes a .git folder)
+
+$  git add .  // add all files in the directory to your newly created git repository
+
+$  git commit -m "initial commit"  // actually commit those changes to your git repo
+[/code]
+
+Then he has you setup your github and click the "create new repo" button which should be on your github.com 'Dashboard'.  Following that, you are to add the remote information to your git repo.   
+[code]
+$  git remote add origin git@github.com:YourGitHubAccount/YourAppName.git
+[/code]
+
+That command creates a new 'remote' named origin.  Some helpful commands related to this follow:
+[code]
+$  git remote show
+$  git remote rename <old name> <new>
+$  git remote rm <name of remote to delete>
+[/code]
+
+After that's all good to go, you can go ahead and push to your newly created remote repository:
+[code]
+$  git push -u origin master
+[/code]
+
+... OK, the error you received was probably 
+[code]
+$  git push -u origin master
+Permission denied (publickey).
+fatal:  The remote end hung up unexpectedly
+[/code]
+
+That problem is easily remedied, just perform the following steps.
+ref (optional):  http://help.github.com/win-set-up-git/  (see the "setup ssh" section)
+
+1)  Remove any old keys in the .ssh directory so you can add a new key.  
+[code]
+$  cd ~/.ssh
+$  rm id_rsa*
+[/code]
+
+2)  Add a new key that is built, based on your email at github.  
+[code]
+$  ssh-keygen -t rsa -C "your_email@youremail.com"
+<hit enter>
+<input an optional pass phrase>
+[/code]
+
+Copy the key and paste it into your github account's "SSH public Keys" section on the website.
+[code]
+$  cat ~/.ssh/id_rsa.pub
+<copy the whole line/ multi-line>
+[/code]
+
+After that, you should be able to follow along with the guy's excellent video tutorial if the way is not yet clear for you.  I got bored at about 7:45, and moved onto writing the second part of this tutorial.
+
+Want to see [url="http://www.dreamincode.net/forums/blog/1662/entry-3463-day-45-working-with-git-to-colaberate-on-source-code/"]more git[/url]?

@@ -1,0 +1,17 @@
+In this tutorial series, I explain how to do Arduino in a sophisticated manor.  
+If you've done a couple Arduino projects so far and are wondering "Huh... so am I doing this right?" then you've come to the right tutorial series.   
+By the end of this series, you will have a sophisticated development environment, 
+you will know how to produce sophisticated code, and you will have had lots of fun doing it.  
+
+
+Curriculum
+
+>- Development Environment, Hello World, and functions
+ |
+ |-- Serial Communication, and flow control
+   |
+   |-- Serial Input, Data Types and Debugging Standards
+     |
+     |-- Code organization, extra files, classes, libs
+       |
+       |-- 

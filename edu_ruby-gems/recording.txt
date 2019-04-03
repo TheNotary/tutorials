@@ -1,0 +1,3 @@
+recordmydesktop --on-the-fly-encoding --fps 1
+
+

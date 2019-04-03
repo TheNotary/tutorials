@@ -1,0 +1,285 @@
+This post is a part of a mini-series!
+[size="4"]Day 6[/size]
+1)  [color="#8B0000"]Installing (You Are Here)[/color]
+2)  [color="#8B0000"]Test a Rails App!  [url="http://www.dreamincode.net/forums/blog/1662/entry-3487-day-63-rails-application/"]link[/url][/color]
+3)  [color="#8B0000"]Configuring Webserver  [url="http://www.dreamincode.net/forums/blog/1662/entry-3495-day-65-configuring-nginx-to-serve-rails-apps/"]link[/url][/color]
+4)  [color="#8B0000"]Configuring MySql  [/color][url="http://www.dreamincode.net/forums/blog/1662/entry-3502-day-67-configuring-mysql-for-your-rails-app/"]link[/url]
+
+
+[b]:: Installing Ruby[/b]
+ref:  http://ryanbigg.com/2010/12/ubuntu-ruby-rvm-rails-and-you/
+
+Install prerequisites so we can use curl and download rvm ([b]Ruby Version Manager[/b]).  
+[code]
+$  apt-get update
+
+$  apt-get install build-essential bison openssl libreadline6 libreadline6-dev curl git-core zlib1g zlib1g-dev libssl-dev libyaml-dev libsqlite3-0 libsqlite3-dev sqlite3 libxml2-dev libxslt-dev autoconf nodejs
+[/code]
+
+Troubleshooting (nodejs isn't in the default repository list on debian stable):
+[spoiler]
+If it says it can't install nodejs, then remove it from the installation string and install everything else, then manually install it by following this guide.  
+
+([url=https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager]install nodejs in debian[/url])
+[code]
+apt-get install python g++
+mkdir ~/nodejs && cd $_
+wget -N http://nodejs.org/dist/node-latest.tar.gz
+tar xzvf node-latest.tar.gz && cd `ls -rd node-v*`
+./configure
+make install
+[/code]
+
+[/spoiler]
+
+
+Download and install rvm (not using apt-get obviously)
+[code]
+$  bash -s stable < <(curl -s https://raw.github.com/wayneeseguin/rvm/master/binscripts/rvm-installer)
+[/code]
+
+Then, sort of put rvm into the environment PATH  (this won't work if you used 'su', and rvm may only be available if you're logged in through SSH.  You also need to log out and log back in...)
+
+(Run the below code as the desired user and it will put stuff at the bottom of ~/.bashrc)
+[code]
+$  echo '[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"' >> ~/.bashrc 
+[/code]
+
+(Run as root and it should end up in /root/.bashrc)
+[code]
+$  echo '[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"' >> ~/.bashrc 
+[/code]
+
+Then you could try to run this command or if that doesn't work, restart your ssh session  (I don't get linux...)
+[code]
+$  . ~/.bashrc
+[/code]
+
+If your installation is successful, typing [inline]$  rvm [/inline] will yield a result.  
+
+One more configuration is needed for rvm to work properly:
+[code]
+$  rvm pkg install zlib
+[/code]
+
+Now install a few versions of ruby:
+[code]
+$  rvm install 1.8.7
+$  rvm install 1.9.2
+[/code]
+
+Weeks later, update rvm and ruby 1.9.2 to the latest patch!
+[code]
+$  rvm get latest   # this will update rvm itself
+$  rvm reload
+$  rvm install 1.9.2  
+[/code]
+
+Switch to using a specific version of ruby, and set the default version to be used at login (necessary).  
+[code]
+$  rvm use 1.9.2
+$  rvm --default use 1.9.2
+[/code]
+
+[spoiler]
+Extra Commands:
+
+[code]
+$  rvm implode         # uninstalls rvm
+$  rvm requirements    # lists things missing that rvm needs to work
+[/code]
+
+Trouble Shooting:
+At this point you should be able to type [inline]$  gem list[/inline] and see that the gem 'rake' is installed.  If not, then you need to uninstall those versions of ruby, install zlib manuallish, and reinstall (https://rvm.beginrescueend.com/packages/zlib/):
+[code]
+$  rvm remove 1.9.2
+$  rvm remove 1.8.7
+$  rvm pkg install zlib
+$  rvm install 1.9.2
+$  rvm install 1.8.7
+[/code]
+I don't remember what I was doing that caused this bug but I know I was doing something odd...
+[/spoiler]
+
+Sometimes you'll have instances where 1.9.2 will be incompatible with some rails thing you're trying to do.  In that case, switch your ruby version down to 1.8.7.  
+[code]
+$  rvm --default use 1.8.7
+[/code]
+
+
+Getting RVM working in x11(linux GUI)
+[spoiler]
+RVM should work just fine over ssh at this point.  But to make it so RVM will work in your x11 session (linux GUI) too, you must modify the default "profile" for terminal windows.   
+
+1)  Spawn a terminal window
+Applications ---> 'Accessories' ---> 'Terminal' 
+
+2)  Edit the default terminal profile to work with RVM
+
+Edit ---> Profiles... --> SELECT "Default" --> CLICK "Edit"
+
+"Title and Command" --> CHECK "Run command as a login shell"
+
+That will make all terminals work with rvm EXCEPT for root terminals.  
+[/spoiler]
+
+
+[b]:: Installing Gem and Gemsets[/b]
+
+When we installed ruby through rvm, it automatically installed gem for us (version 1.6.2 for me).  Check this site out for details on gemsets and using rvm to manage gem.  https://rvm.beginrescueend.com/gemsets/basics/
+
+This rvm program is so cool that it lets us have many, compartmentalized 'gemsets' for each ruby version you have installed.  Let's create an alternative gemset for ruby 1.8.7 (which we're already set to because our last version change command was [inline] rvm --default use 1.8.7[/inline]  
+
+[code]
+$  rvm gemset create testrails2.3.5
+$  rvm 1.8.7@testrails2.3.5
+$  rvm gemset list
+[/code]
+[b]list:[/b]
+[code]
+$  rvm gemset list
+$  rvm gemset list_all
+[/code]
+Now if we really wanted to, we could install rails version 2.3.5 and test it here inside 1.8.7, while still having the latest version of rails in the head 1.9.2 version with out any confusion over which rails app will be used.  Let's switch back to the main 1.9.2 version since we don't want to do anything with gems yet.  
+[code]
+$  rvm 1.9.2
+[/code]
+
+Here's an interesting trick where you put a .rvmrc file in some directory and it will automatically setup your rvm to be using the version you specified.  
+[code]
+$  echo "rvm 1.9.2" > APPNAME/.rvmrc
+[/code]
+
+
+To [b]update gem[/b] using rvm:
+[code]
+$  rvm rubygems 1.8.5
+[/code]
+For me, it gave me a dumb warning and so I had to run the command a second time...
+
+For a standalone installation of gem, you'd see this command, but usually you can get away with using rvm to update it for you:
+[code]
+$  gem update --system
+[/code]
+
+You can downgrade too, if gems are giving you tons of warnings and not working:
+[code]
+$  gem update --system 1.7.2
+[/code]
+
+
+[b]:: Installing Rails[/b]
+
+Apparently, if you use apt-get to install gem, the name of gem changes depending on what version it is atm... Luckily this new procedure I wrote avoids this problem.  
+[code]
+$  gem install rails --include-dependencies
+INFO:  `gem install -y` is now default and will be removed
+INFO:  use --ignore-dependencies to install only the gems you list
+<randomly hit enter once?>
+<randomly hit enter again>
+<randomly hit enter again?>
+<wait a long time for it to start updating you with progress reports on its downloads...>
+[/code]
+OK, this step is weird.  If you're lucky, it will work.  If you're unlucky, you'll need to try it again.  Don't ask me how.  Just try again if it doesn't do anything for half an hour or something...  My test machine sux.  
+
+Also, what if you want to install another version of rails in addition to the latest and greatest?
+[code]
+$  gem install rails -v=2.3.5
+[/code]
+Easy enough.  
+
+
+[b]::  More About NodeJS (required for rails 3.2 and up) [/b]
+
+Rails is apparently asking me to install a javascript runtime.  I had read about them a while ago, and it's basically a way of letting you execute javascript as though it were any other language like ruby or C++ without going through a web browser.  I know, it totally weirded me out when I first heard about it because to me (due mostly to the environments I run it on) javascript is the sloppy language you use because it's the only thing available.  I guess that sentiment isn't felt in the rest of the community so maybe I will look into it more.  
+
+An alternative method of installation (we already installed it up at the top, so you don't need to install it again):
+[spoiler]
+[code]
+$  cd /tmp
+$  git clone https://github.com/joyent/node.git;cd node
+
+# 'git tag' shows all available versions: select the latest stable.
+$  git checkout v0.7.9
+
+
+$  ./configure; make; make test; make install
+
+$  node -v # Test it's working
+[/code]
+[/spoiler]
+
+ref:  http://sekati.com/etc/install-nodejs-on-debian-squeeze
+
+
+[b]::  Configure MySQL with rails[/b]
+Since we already [url="http://www.dreamincode.net/forums/blog/1662/entry-3419-day-2-installing-mysql-a-web-server-named-nginx-and-php-in-debian-and-terrible-vi-notes/"]installed MySql[/url] in a prior entry, we just need to install the mysql adapter gems.  
+(When I found a reference, it said do libmysqlclient14-dev, but it was out of date by 1 I guess...)
+[code]
+$  apt-get install libmysqlclient15-dev   
+$  gem install mysql
+$  gem install mysql2      ~~that might be important too...
+[/code]
+(ref (borrowed a single command):  http://daniel.lorch.cc/docs/rails_install_debian/)
+
+
+
+
+[b]::  MAKE HELLO WORLD!!![/b]
+[code]
+$  cd /var/rails
+$  rails new myapp
+[/code]
+
+zomg, we did it!  We can even test it out on WEBrick, the built in server!
+
+[code]
+$  cd myapp
+$  rails server
+[/code]
+
+[code]
+http://localhost:3000
+[/code]
+
+Want to make webrick faster?
+[spoiler]
+You can make webrick more responsive on remote machines by following this:
+http://stackoverflow.com/questions/1156759/webrick-very-slow-when-accessing-applications-from-remote-desktop
+I found my webrick config file at:
+/usr/local/rvm/rubies/ruby-1.9.2-p180/lib/ruby/1.9.1/webrick/config.rb
+
+Make true the 'nil' in line [inline]:DoNotReverseLookup => nil, [/inline]
+[/spoiler]
+
+
+
+
+
+
+ref:  http://kevin.vanzonneveld.net/techblog/article/ruby_with_nginx_on_ubuntu_lucid/
+(you might need some of this still too.  Some we installed previously, but w/e.)
+[code]
+$  apt-get install -y libdbd-sqlite3-ruby sqlite3 libsqlite3-dev libsqlite3-ruby
+$  gem install sqlite3
+[/code]
+
+
+
+Let's close this entry up with a hello world in ruby on the command line (this is not 'rails' it's just ruby).
+(vi hello.rb)
+[code]
+# this is a super cool hello world example
+puts "hello world"
+puts "!" * 5
+puts 1 
+puts "!" * 3
+[/code]
+
+
+to run that ruby script, type
+[code]
+$  ruby hello.rb
+[/code]
+
+You may go to the [url="http://www.dreamincode.net/forums/blog/1662/entry-3487-day-6-rails-application/"]next entry on rails[/url] if you'd like.

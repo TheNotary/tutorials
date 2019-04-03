@@ -1,0 +1,113 @@
+
+## Configure Server
+
+First install burp on the server.  
+
+
+```
+$  apt-get install burp
+```
+
+I consider burp to be a hardcore unix program.  That means all information required exists in the man page.  Luckily burp isn't so hardcore as to not post the man page over http.  :)  http://burp.grke.org/docs/manpage.html
+
+
+
+So once you have burp set up on a server, you need to set a few key values in `/etc/burp/burp-server.conf`.  Make sure to change the ssl_key_password.  
+
+Check out the folder of the server that lists all the clients, that's `/etc/burp/clientconfdir` or something...
+
+(/etc/burp/clientconfdir/linux_laptop_a)
+```
+password = changemetowhatyouputintheclientmachine
+
+# More configuration files can be read, using syntax like the following
+# (without the leading '# ').
+. incexc/example
+
+include = /home/kentos
+include = /etc/motd
+include = /etc/samba/smb.conf
+include = /etc/openvpn
+include = /etc/fstab
+include = /etc/network/interfaces
+include = /etc/burp
+include = /repos
+include = /storage/archive/ruby_one_click
+exclude = /home/kentos/.rvm
+exclude = /home/kentos/.cache
+exclude = /home/kentos/.wine
+```
+
+(/etc/burp/clientconfdir/the_burp_server_hostname)
+```
+password = changeme
+
+# More configuration files can be read, using syntax like the following
+# (without the leading '# ').
+. incexc/example
+
+include = /home/john
+include = /etc/motd
+include = /etc/samba/smb.conf
+include = /etc/openvpn
+include = /etc/fstab
+include = /etc/burp
+include = /etc/network/interfaces
+exclude = /home/john/.rvm
+```
+
+(/etc/burp/clientconfdir/windows_client)
+```
+password = changeme
+
+# More configuration files can be read, using syntax like the following
+# (without the leading '# ').
+. incexc/example
+
+include = D:/all_files
+include = C:/Users
+exclude = C:/Users/newt/Downloads
+exclude = C:/Users/newt/AppData/Local/Temp
+exclude = C:/Users/newt/AppData/Local/Google
+exclude = C:/Users/newt/AppData/Local/Mail.Ru
+```
+
+
+
+
+## Configure Client
+
+The file `/etc/burp/burp.conf` needs to be configured for the client.  You only need to key in the ip address to the burp server, the password, and the cname really... that's all at the top.  The files that will be backed up should be configured on the burp server.  
+
+
+#### Manually Initiate a Backup
+
+To backup your well configured client computer do
+
+```
+#  a = action
+#  b = backup
+$  burp -a b
+```
+
+
+#### Manually Dump a Backup
+
+
+```
+# This will regex for a folder/file named Desktop and dump that to C:/tmp
+$  burp -a r -r Desktop -d C:/tmp
+
+# I think this will dump everything
+$  burp -a r -d /storage/tmp
+```
+
+
+## Cron configuration
+
+$  sudo crontab -e
+30 2 * * * burp -a b
+
+
+
+

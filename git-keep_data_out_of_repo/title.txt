@@ -1,0 +1,1 @@
+git (intermediate) -  Keeping stuff out of your repo

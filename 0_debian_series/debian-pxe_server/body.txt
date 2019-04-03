@@ -1,0 +1,389 @@
+Have you ever wanted to use that fancy bios feature that you never had the time to straighten out?  I'm talking about [b]PXE[/b], the technology that allows your PCs (granted they were made after 1999) the ability to boot from media on the network instead of having to painstakingly insert a plastic disk into an optical media tray.  What follows is a Debian based journey!  
+
+ref:  http://www.hps.com/~tpg/notebook/pxe.php
+ref:  http://www.howtogeek.com/63226/how-to-setup-network-bootable-utility-discs-using-pxe/
+ref:  http://www.wonkity.com/~wblock/docs/html/pxe.html#_memtest
+
+Here's a dumbed down (and slightly misleading) flow chart of how PXE boots your system.  
+
+PXE Client --> (connects to tftp server) -->  linux.iso 
+
+Things you'll need
+
+-atftp (a tftp server)
+-dhcp  (a system that allows two computers to connect)
+-Some PXE bootable images
+
+
+
+[size="4"]1)  Install atftp[/size]
+
+$  apt-get install atftpd
+
+  # Set up atftpd  (do not use inetd, since it hardly ever gets used)
+$  touch /var/log/atftp.log     # Enable logging
+$  vi /etc/default/atftpd
+[code]
+    USE_INETD=false
+    #  verbose=7 --trace will trace every packet
+    OPTIONS="--daemon --verbose --tftpd-timeout 10 --retry-timeout 5 \
+      --mcast-port 1758 --mcast-addr 192.168.1.0-255 --mcast-ttl 10 \
+      --maxthread 10 --bind-address 0.0.0.0 --verbose=5 \
+      --logfile=/var/log/atftp.log /tftpboot"
+[/code]
+You might need to change [inline]--mcast-addr 192.168.1.0-255[/inline] based on your network situation.  
+(Thanks Kaotikmynd!)
+
+$  update-inetd --disable tftp
+$  /etc/init.d/atftpd restart
+
+
+
+
+[size="4"]2)  Install syslinux so we can use its boot menu capabilities[/size]
+
+Our root directory for tftp is located at /tftpboot.  We'll put this bootable image there which will allow us a 'boot menu' when we try to boot over PXE.  
+[code]
+$  apt-get install syslinux
+$  mkdir -p /tftpboot/boot /tftpboot/pxelinux.cfg
+$  chmod 777 /tftpboot
+
+   # Copy files from syslinux distribution to /tftpboot
+$  cp -p /usr/lib/syslinux/pxelinux.0 /tftpboot
+$  cp -p /usr/lib/syslinux/menu.c32   /tftpboot
+$  cp -p /usr/lib/syslinux/memdisk    /tftpboot/boot
+[/code]
+
+
+[size="4"]3)  Install DHCP[/size]
+
+As I said before, DHCP just lets you coordinate IP addresses in a network.  It also let's you setup 'booting' too, so no, you can't just use the dhcp server on your router (note: Having multiple dhcp servers on one network didn't seem to cause any problems for me).  I've heard that once this protocal is setup, if you have a modern network card, you can just directly plug an ethernet cable between two machines and they'll be able to comunicate as though they're on a hub of some sort!  
+[code]
+$  apt-get install dhcp3-server 
+[/code]
+It will say "fail" twice, in menacing maroon font colors.
+
+Add this code to the bottom of dhcp's config file to make it work...  (making the usual tweaks to 192.168.X.0 to fit your current network configuration)
+(/etc/dhcp/dhcpd.conf)
+[code]
+.
+.
+.
+subnet 192.168.1.0 netmask 255.255.255.0 {
+option domain-name "mylan";
+
+option domain-name-servers 192.168.1.1;
+option routers 192.168.1.1;
+option subnet-mask 255.255.255.0;
+
+allow booting;
+allow bootp;
+filename "/tftpboot/pxelinux.0";    # image to boot over LAN
+next-server 192.168.1.5;            # Address of this server
+
+range 192.168.1.100 192.168.1.200;  # The clients will be assigned IPs w/ in this range
+}
+[/code]
+
+
+ref:  http://www.linuxquestions.org/questions/linux-networking-3/debian-squeeze-isc-dhcp3-server-failed-to-start-subnet-problem-844037/
+
+
+Then you can restart the dhcp server and it will succeed in starting the dhcp server.  
+[code]
+$  /etc/init.d/isc-dhcp-server restart
+Stopping ISC DHCP server: dhcpd failed!
+Starting ISC DHCP server: dhcpd.
+[/code]
+
+
+
+
+
+[size="4"]4)  Setup the menu[/size]
+
+This part is actually a little more fun than the rest of it.  Here we get to set up the menu for the PXE boot options (remember that you can have more than just one distribution/ utility disk primed for booting over LAN at one time).  
+
+(/tftpboot/pxelinux.cfg/default)
+[code]
+DEFAULT menu.c32
+PROMPT 0
+MENU TITLE CSG PXE Boot Menu
+TIMEOUT 100
+
+#   First one is default unless 'DEFAULT name' specified
+LABEL memtest
+  MENU LABEL Memory Test
+  kernel boot/memtestp        # this is the actual bootable image you point to
+
+
+#   Here's a second bootable image we'll do after we test the first one
+LABEL debian
+  MENU LABEL Debian 64bit
+  kernel boot/debian/amd64/linux
+  append vga=normal initrd=boot/debian/amd64/initrd.gz -- 
+[/code]
+
+
+
+
+[size="4"]5)  Place the memtest so it will be bootable by the client machine[/size]
+
+[code]
+$  mkdir -p /tmp/tmp
+$  wget http://www.memtest.org/download/4.20/memtest86+-4.20.floppy.zip -O /tmp/tmp/memtest.zip
+
+$  cd /tmp/tmp    # or some directory for temporary files
+$  unzip memtest.zip 
+$  cp -p floppy/memtestp.bin  /tftpboot/boot/memtestp
+$  rm -rf /tmp/tmp
+[/code]
+
+
+
+
+[size="4"]6)  Restart everything and test it out[/size]
+
+[code]
+$  /etc/init.d/atftpd restart
+$  /etc/init.d/isc-dhcp-server restart
+[/code]
+
+As your client is booting up, I hear that spamming f12 will bring you to a bootup method selection, or you can fiddle with your bios.  
+
+
+
+
+
+[size="4"]7)  Let do a debian net install just for kicks![/size]
+
+Debian is a classy enough distribution that the developers have gone out of their way to setup an installation path for PXE.  So download and unpack their network install for debian.  
+[code]
+$  cd /tmp
+$  wget http://ftp.nl.debian.org/debian/dists/squeeze/main/installer-amd64/current/images/netboot/netboot.tar.gz
+$  tar -zxvf netboot.tar.gz
+[/code]
+
+...then put everything in it's right place.  
+[code]
+$  mkdir -p /tftpboot/boot/debian/amd64
+
+$  cp debian-installer/amd64/linux /tftpboot/boot/debian/amd64/linux
+$  cp debian-installer/amd64/initrd.gz /tftpboot/boot/debian/amd64/initrd.gz
+[/code]
+
+Now, if you look closely, you'll notice that I only needed two files from that tar ball: the kernal (linux) and the initrd (initrd.gz).  This is typical.  If you'd like to know why, visit [url=http://www.howtogeek.com/63226/how-to-setup-network-bootable-utility-discs-using-pxe/]this special reference by howtogeek.com [/url] who did an amazing job with their tut on doing a network install of Ubuntu.  
+
+In a prior step, we setup the PXE menu to point to these files so we should be all ready to go now.  
+
+
+
+
+
+
+Check this reference out for even more secrets, including how to speed things up by using HTTP!
+
+ref:  http://www.wonkity.com/~wblock/docs/html/pxe.html#_memtest
+
+
+
+
+
+=============================== END OF TUTORIAL,  THERE'S NOTHING ELSE TO SEE HERE ======================================
+
+
+
+Well, that tutorial is over with.  It was pretty long, wasn't it?  Well, I'm going to set my rig up serving Ubuntu live CD because that's just plain awesome.  I'll leave my notes here for you (but mostly for me) but I'm bascially just following two tutorials (and then scouring the interenet looking for a working append line).  
+
+PXE and Ubuntu -
+ref: http://www.howtogeek.com/61263/how-to-network-boot-pxe-the-ubuntu-livecd/
+Installing NFS server-
+ref: http://www.crazysquirrel.com/computing/debian/servers/nfs.jspx
+ref: http://www.debianhelp.co.uk/nfs.htm
+
+
+[size="4"]1)  Place Ubuntu content where it goes and mount it:[/size]
+[code]
+$  mkdir -p /tftpboot/boot/ubuntu/ubuntu32
+$  wget http://www.ubuntu.com/start-download?distro=desktop&bits=32&release=latest -o /tftpboot/boot/ubuntu/ubuntu32.iso    # latest ubuntu live CD
+[/code]
+
+(/etc/fstab)
+[code]
+.
+.
+.
+/tftpboot/boot/ubuntu/ubuntu32.iso /tftpboot/boot/ubuntu/ubuntu32 udf,iso9660 user,loop 0 0
+[/code]
+
+[code]
+$  mount -a
+$  ls /tftpboot/boot/ubuntu/ubuntu32
+You should see all files on cd
+displayed as output...
+[/code]
+
+
+
+[size="4"]2)  Install NFS:[/size]
+
+[code]
+$  apt-get install nfs-kernel-server nfs-common portmap
+[/code]
+
+(/etc/exports)
+[code]
+/tftpboot/boot/ubuntu/ubuntu32 *(rw,sync,no_wdelay,insecure_locks,no_root_squash,insecure,async)
+[/code]
+
+
+Restart the NFS server.  
+[code]
+$  exportfs -a
+$  /etc/init.d/portmap restart
+$  /etc/init.d/nfs-kernel-server restart
+$  /etc/init.d/nfs-common restart
+
+
+$  mkdir -p /mnt/nfs        #Test out your work
+$  mount localhost:/tftpboot/boot/ubuntu/ubuntu32 /mnt/nfs
+$  ls /mnt/nfs
+$  umount /mnt/nfs
+[/code]
+
+
+
+
+
+
+[size="4"]3)  Create a menu item for the new PXE boot:[/size]
+(/tftpboot/pxelinux.cfg/default)
+[code]
+LABEL Ubuntu LiveCD 12 32bit
+  MENU DEFAULT
+  KERNEL boot/ubuntu/ubuntu32/casper/vmlinuz
+  APPEND root=/dev/nfs boot=casper netboot=nfs nfsroot=192.168.0.11:/tftpboot/boot/ubuntu/ubuntu32 initrd=boot/ubuntu/ubuntu32/casper/initrd.lz quiet splash --
+
+IPAPPEND 3
+[/code]
+
+
+
+Things booted fine for me after I figured out that APPEND line.  Networking wasn't working for me, I believe due to my NICs, and the fact that I chose 64bit rather than 32bit (Linux 32 bit is not limited to 4gb like windows, btw...)
+
+
+
+
+====Linux Mint
+
+
+
+[size="4"]1)  Place the Linux Mint content where it belongs and mount it:[/size]
+[code]
+$  mkdir -p /tftpboot/boot/linuxmint/linuxmint13-x32
+$  wget http://www.linuxmint.com/edition.php?id=103 -o /tftpboot/boot/linuxmint/linuxmint13-x32.iso
+[/code]
+
+(/etc/fstab)
+[code]
+.
+.
+.
+/tftpboot/boot/linuxmint/linuxmint13-x32.iso /tftpboot/boot/linuxmint/linuxmint13-x32 udf,iso9660 user,loop 0 0
+[/code]
+
+Mount up manually so you don't need to reboot.
+[code]
+$  mount -a
+[/code]
+
+
+(/etc/exports)
+[code]
+.
+.
+.
+/tftpboot/boot/linuxmint/linuxmint13-x32 *(rw,sync,no_wdelay,insecure_locks,no_root_squash,insecure,async)
+[/code]
+
+
+
+Restart NFS server
+[code]
+$  exportfs -a
+$  /etc/init.d/portmap restart
+$  /etc/init.d/nfs-kernel-server restart
+$  /etc/init.d/nfs-common restart
+
+
+$  mkdir -p /mnt/nfs        #Test out your work
+$  mount localhost:/tftpboot/boot/linuxmint/linuxmint13-x32 /mnt/nfs
+$  ls /mnt/nfs
+$  umount /mnt/nfs
+[/code]
+
+Create a new menu item for the new PXE boot:
+
+(/tftpboot/pxelinux.cfg/default)
+[code]
+LABEL LinuxMint Livecd 13
+KERNEL boot/linuxmint/linuxmint13-x32/casper/vmlinuz
+APPEND root=/dev/nfs boot=casper netboot=nfs nfsroot=192.168.1.5:/tftpboot/boot/linuxmint/linuxmint13-x32 initrd=boot/linuxmint/linuxmint13-x32/capser/initrd.lz nosplash --
+[/code]
+
+Change nfsroot=192.168.1.5 to point to the IP address of the PXE server you're setting up.  
+
+
+
+
+
+====Clonezilla
+http://clonezilla.org/livepxe.php
+
+
+====Bootable DOS environment (Live CD for DOS) ====
+
+Bootable OSs could be VERY handy for systems that involve legacy DOS programs.  I've got one of those that I'm phasing out over the next year, but until then I hoped to be able to use a PXE system to boot into a Live Environment.  It seems as though just plain old DOS isn't capable of handling the legacy program I'm dealing with though --it complains about there being no "file locking service" or something.  Anyway, it might be handy anyway, its from this reference that I mentioned up above as well.  
+
+Here's a use-case someone else made...
+[media]http://www.youtube.com/watch?v=WT2kmuAf5gw[/media]
+
+
+ref:  http://www.lockstockmods.net/2008/04/25/install-windows-over-network-with-pxe/
+
+(/tftpboot/pxelinux.cfg/default)
+[code]
+.
+.
+.
+LABEL Win 98 DOS
+  MENU LABEL Win 98 DOS
+  kernel boot/memdisk
+  append initrd=boot/win/w98se-netboot.IMA
+
+[/code]
+
+Files need to be put into place as well obviously:
+[code]
+$  mkdir /tftpboot/boot/win
+$  cd /tftpboot/boot/win
+$  wget http://www.lockstockmods.net/?dl_id=11 -o w98se-netboot.IMA
+[/code]
+
+Memdisk should already be in a suitable location if you followed that one previous procedure so you're already done!
+
+As you may have seen in the video, the thing that makes this image so cool is that it's very likely able to recognize your network card, and it can mount samba shares using the command...
+[code]
+>  net use f: \\server\share
+[/code]
+
+
+====Bootable Windows 98 (Live CD) =======
+
+I haven't had much luck with this stuff, I tried with a preconfigured winbuilder.exe approach but I'm pretty sure I need to find some win 98 drivers and slip stream them into the image for this old school Dell PC I'm trying to boot.  
+
+approach A)  MANUAL
+ref:  http://silent.gumph.org/content/4/7/071-diskless-windows-pxe.html
+
+Approach B)  AUTOMATED with winbuilder
+ref:  http://win98livecd.winbuilder.net/

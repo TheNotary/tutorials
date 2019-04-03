@@ -1,0 +1,57 @@
+http://help.github.com/fork-a-repo/
+
+
+
+
+
+
+================================================================
+What if you want to work on a project with someone else on github?
+=============
+
+
+So let's say you want to collaborate with someone on github.  No worries, github makes that easy.  
+
+1)  Fork a repo onto your github account
+
+First thing's first, navigate to the project you'd like to collaborate on, and click the fork button (someone else must own the project).  
+
+
+2)  Make a change that you think is swell
+
+Just change some code... You could even do it from the html interface now.  
+
+
+3)  Issue a pull request
+
+You can now click the "pull request" button on your project page.  The other party will be alerted that you have made a swell change to the project.  They can then choose to either accept the change, or ignore it in the case that the change isn't swell enough.  
+
+
+
+
+
+===============================================================
+What if the other guy makes a change to his project after I've forked it?
+==============
+
+"Don't sweat it, this is no problem at all"
+
+1)  Fetch the upstream changes and merge them (you need to work with things on a local machine, so set that up first)
+
+[spoiler]
+[code]
+$  git clone git@github.com/YourAccount/ForkedRepo.git
+$  cd ForkedRepo
+[/code]
+[/spoiler]
+
+[code]
+$  git remote add upstream git://github.com/octocat/Spoon-Knife.git
+
+$  git fetch upstream
+
+$  git merge upstream/master
+[/code]
+
+
+If you have problems, remember that git stash is your friend.  (TODO:  add link to git stash)

@@ -1,0 +1,175 @@
+
+
+To do cool things with your xbox, start out by purchasing one (preferably one with no signs of prior modifications). 
+
+
+
+::SoftMod Approch::
+
+The softmod approach is cool because it doesn't cost any money and it works.  
+
+- Run unsigned code
+  -> Run backup discs
+  -> Emulators
+  -> Xbox Native Apps
+    (These are the most powerful and interesting aspect of the xbox)
+    
+    >> Xbox original was the precursor to the phrase "there's an app for that"
+    - flash/ cycle the LED colors on the power button
+    - Watch DVDs (why not?)
+    - Copy Xbox Games to the HDD and play from there!
+    - FTP transfer titles to the XBOX
+    - Chat on IRC
+    - Actually boot into linux (a very annoying flavor of linux sadly)
+
+
+HISTORY>>
+  So all these things sound really great, there's some piraty things, but there's also some intereseting things like boot into linux for less that $40.
+  And it is cool, but recently, thanks to initiatives like the Raspberry Pi, we don't need to buy all the XBOX originals out there and have the cost of the console skyrocket.  
+  Instead we can just pay ~$40 for a raspberry pi and do everything except pirate xbox video games.  
+  
+
+What you need
+
+- The MechAssult game (the old school version, not the second releas version that got awards and stuff... M$ fixed it so you can't hack with the latest version of Mech Assult)  cost ~$5
+
+- Xbox Memory Card
+
+- A way to get SID installed onto the xbox memory card.  The easiest way to do this is to use an already hacked xbox to FTP the files over and all that...  If this is your first xbox hack, then you'll need to create an adapter that connects an xbox original controller to your PC via USB (it's fun and easy but time consuming...  google for a tut if needed).  
+
+If you want to upgrade your hdd, you'll need
+
+-star-hex wrench tool for opening it up
+
+-Ideally, another computer laying around that has an IDE port for use with XboxHDD
+
+
+
+
+::Initial Hack::
+
+
+1)  Move the Mech Assult Game save and the SID installer game save onto your xbox's HDD
+
+2)  Load up the hacked Mech Assult game save file from within MechAssult (it's the campaign named "run Linux")
+
+Great, you're now booted into the SoftMod Installer Deluxe's main menu.  From here you need to create backups and do all the file saving that you want.  
+
+3)  Choose "Backup MS" in the SoftModSID
+
+4)  Choose "Backup EEPROM"
+
+5)  Use Filezilla (DL from google) to FTP into your xbox and copy over the C and E:/ drives over to a safe spot on your Home/Work file server (I use fake-raid mirrored drives).  
+
+Congratulations, you have reached a point where you can no longer brick your Xbox!  You can always do a full re-vergin after this point, putting everything back to the way it was before you started hacking.  
+
+6)  Choose "install SoftMod" to hack your xbox.  A new dashboard will automatically be installed called "Evox" it's pretty awesome.  It alows you to install apps onto your xbox, such as "DVD2Xbox" which let's you rip games into your xbox so you don't need the DVD anymore (and they load faster).  You can also install "Emulators" which allow you to play old school video games on your XBOX as if it were a Super Nintendo or Sega Genesis.  
+
+
+
+
+::Install XDSL (a debian based linux distro)::
+
+There's an app called Auto-Installer Deluxe, made be the same people who wrote SID.  Download that app and use it's menu to install XDSL onto the HDD.  Then you can boot the XDSL app.  
+
+During the installation, some files will be written to the E:/ drive of your XBOX, linux.cfg (used to configure the way linux boots) and KNOPIX folder (containing the system files of the linux distro) and a drive:/Apps/XDSL/default.xbe file for starting linux from within your dashboard.  
+
+
+Once you have XDSL installed, you essentially have a debian based linux installed and running on your XBOX.  This id obviously very dope.  But you need to do further configurations to make it even more dope.  
+
+1)  Change the installation to a Loopback installation
+As of right now, everytime you turn off your xbox, you will lose all of the changes you made in XDSL that session.  It is essentially a read only installation.  This isn't very useful.  To make it a read/write installation, the Loopback installation method will create a file on your Xbox's F:/ partition where all of your linux system and user files will be written to.  
+
+To upgrade to a loopback installation, do:
+
+Main Menu -> tools -> Xbox Loopback Install
+
+
+I chose a size of 2000MB because I have a huge hdd in this thing and will have trouble using up all the free space.  If you put in a larger number, the whole thing reverts to the tiny 200mb setting, which is dumb as hell, but that's how it works...  
+
+Also, I created a 128mb swap file.  Swap files are like... when your system runs out of ram... it starts using HDD space as ram instead of doing a blue screen?  Well Xbox originals only have something like 64mb of ram, so you'd better create a swap file with 128mb.  
+
+If you have a hard modded xbox, you can install a cromwell bios to boot into XDSL without needing to go through the dashboard (e.g. google for cromwell bios and flash an extra bank of your modchip).
+
+Once you have the loopback installed, you can remove the old installation since it only gets in the way (e.g. edit the E:/linuxboot.cfg as desired).  
+
+
+2)  Change your root password so other people can't use ssh to connect to your machine and delete all your files...
+
+$  sudo passwd
+<input new root password>
+
+
+3)  Change the mirror to a working mirror...
+To install and update XDSL's software, files are downloaded from a 'mirror'.  The default mirror which XDSL has configured automatically is broken...  Before you can do anything, you need to change this.  
+
+
+"Panel" (it's in the lower left corner next to the main menu button) ->  "Select Mirror"  ->  "Select" -> choose first option and then click OK.  
+
+Now you can do things in XDSL like "Enable Apt" for instance and you won't get a 404 error.  
+
+
+4)  Get the package manager installed
+
+For some reason, XDSL comes with a disabled package manager
+
+Main Menu -> Tools -> Enable Apt (near bottom)
+
+Main Menu -> Tools -> Enable GNU Tools (this one is optional... possibly)
+
+Now you'll be able to do commands like...
+
+$  sudo apt-get install python
+
+...to install fun programs.  
+
+
+5)  Change the sources.list file so you can install the latest linux packages
+
+So, this XDSL distro is based off of DSL when it was based off of debian "woody".  "Woody" is a pretty old school version of debian, so you should really change from "woody" to what ever the stable version of debian is.  
+
+(/etc/apt/sources.list)
+[code]
+deb http://ftp.us.debian.org/debian stable main
+[/code]
+
+You also need to configure apt-get so it can handle the upgrade.  Change the "10000000" to "12582912" as indicated below.
+
+(/etc/apt/apt.conf)
+[code]
+.
+.
+.
+APT::Cache-Limit "12582912";
+.
+.
+.
+[/code]
+
+Then do a system upgrade.  
+
+[code]
+$  sudo apt-get update
+$  sudo apt-get dist-upgrade
+[/code]
+
+
+6)  Enable sshd to run at boot...
+
+7)  Install the most fun packages you can think of
+
+
+::What if I bought a used XBOX and it has a hardmod?::
+
+Hard mods suck and took me a while to get used to.  You can install "Bios"es on them, so there's an Evox bios that boots into evox (it looks on the C:/ drive for evox-dash.xbe or something) or you can flash the M$ retail bios onto the xbox.  AID Lite comes with tons of bios files which is great, it's otherwise pretty hard to find the right bios from the usual places.  
+
+If your xbox has a modchip, you don't need to install an HDD that is locked.  This is good for installing shitty HDDs that don't support locking...  Locking is a security mechanism that M$ used in the xbox original to prevent people from easily swapping their HDDs with other people's or something like that...  I never really got what that was about though.  Oh yeah, the EEPROM inside each xbox contains a special code that is able to unlock it's own HDD, and it locks the HDD when it shuts off, so it somewhat obsucrred the software in the Xbox, but obviously people were able to look at the original XBOX's software.  
+
+Anyway, that's what "bios" thingys are all about.  To 'hack' a chipped xbox, you just need to connect to the chip's FTP and drop EVOX into the right folder (the E:/drive I think... idk... I don't specialize in hard mods) and install the proper bios.  I bet you could run AID from the DVD drive to automatically install everything you needed to and you wouldn't need to rely on the chip's buggy FTP (my chip is buggy as hell, lol).  
+
+
+::I'm getting FTP transfer failures, what can I do?::
+
+I notice that the SID softmod installer menu has the most reliable FTP server.  In one of my boxes, the Evox FTP Server has problems, but those problems actually go away when I tell Filezilla to only upload 1 file at a time.  
+
+

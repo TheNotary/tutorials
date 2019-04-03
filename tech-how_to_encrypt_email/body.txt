@@ -1,0 +1,119 @@
+This is a written tutorial and video walkthrough on how to use PGP to encrypt your email.  The videos were done in a windows environment, but Video 2 and 3 in the series should give you a decent idea of how things work if you're a linux user.  In section A of this writeup, I discuss linux installation and briefly go point Mac`ers to the proper DL links.  
+
+[size="4"]Video TOC[/size]
+Part 1 - Download Thunderbird, GnuPG, and Enigmail (windows)
+http://youtu.be/-QwNjYHB7xk
+
+Part 2 - Install
+http://youtu.be/ocA0trX9xME
+
+Part 3 - Configure and Test Demonstration
+http://youtu.be/WpTvlmnBK3w
+
+
+Before we get to the nitty gritty, I'd like to explain how powerful this technology is before people navigate away thinking it can't ultimately protect them.  
+
+I used to believe that anytime you sent a message over an unsafe network (e.g. the internet) other parties would be able to decrypt the document --assuming you specified in which way the document was encrypted over the internet.  I rashly presumed that the only safe way to have encrypted communications was to use Snail mail to share passwords.  Well it turns out that this was a naive belief of mine, and it simply isn't the case.  
+
+Using a technology known as asymmetric encryption, one generates "key pairs" a public key and a private key.  And they are able to share the public key over the internet to be used for encrypting messages.  Once messages are encrypted with a public key, it becomes virtually impossible for any to decrypt the message other than the person with the private key.  
+
+
+So as an overview, what we're going to do is:
+
+[size="3"]::A.  Downloads/ Installations[/size]
+1)  Install Thunderbird, a desktop mail client
+2)  Install GnuPG, a PGP implementation
+3)  Install Enigmail, a encryption plugin for Thunderbird
+
+[size="3"]::B.  Configurations[/size]
+4)  Generate a public private key pair
+5)  Upload our new public key to the keyserver
+6)  Search for our public key and attempt a DL from the key server
+
+[size="3"]::C.  Application[/size]
+7)  Send a test mail to yourself
+
+
+
+
+[size="4"]A.  Installations[/size]
+
+
+[size="2"]For debian/nix users, [/size]
+all you need to do is run the following command line to get all the applications setup.  In straight Debian, 'thunderbird' is instead called 'icedove' and comes without all the Mozilla branding (I think having these non-branded versions is dumb and in other Linux distros, you'll see that the 'thunderbird' package is not only available, but also installed by default).  
+
+[code]
+apt-get install icedove      # for debian
+apt-get install thunderbird  # for cooler UI oriented distros
+
+apt-get install enigmail  # for encrypting mail using GnuPG
+[/code]
+(it's interesting that I could do simply `apt-get install enigmail` and the proper dependency, either icedove or thunderbird would be installed automatically regardless of what distro I'm on)
+
+Beyond that, there's no more installing phase you need to go through.  You can now skip to the second video in the series and skip to section B in this write up (isn't linux awesome!).  
+
+
+
+[size="2"]For Mac users, [/size]
+you can do everything I show in windows, but don't install gpg4win obviously.  You'll instead need to use gpgtools so your downloads list will look like...
+
+http://www.mozilla.org/en-US/thunderbird/
+https://www.gpgtools.org
+http://www.enigmail.net/download/
+
+
+
+[size="2"]For windows installers,[/size] 
+I'm just going to link to the files needed for a windows machine.  The procedure is fully demonstrated in the video if you have any trouble.  It's kinda hard to do it wrong if you leave all the installation options at default.  
+
+http://www.mozilla.org/en-US/thunderbird/
+http://www.gpg4win.org/
+http://www.enigmail.net/download/
+
+
+[size="4"]B.  Configurations[/size]
+
+[size="2"]:: Add an existing email account to Thunderbird[/size]
+
+First, you need to add an email account to Thunderbird.  That step is pretty straight forward and documented in the video, but for reference, in Thunderbird go to:
+
+File -> New -> Existing Mail Account
+
+(Hit alt to expose the file menu in windows)
+
+And follow along with the dialog to add an existing email account to Thunderbird.  When this step is completed, you will be able to send and receive emails on your desktop, but the encryption features have not been setup yet.  
+
+
+[size="2"]:: Generate an encryption Keypair with Enigmail[/size]
+
+So once all those programs are installed, you should be able to open Thunderbird and find a fancy "Open PGP" menu option on the top file menu (hit 'alt' to expose the top menu bar in windows).  
+
+To generate a key pair that will allow other people to encrypt messages they send to you, choose from the menu bar:
+
+OpenPGP -> Key Management -> Generate -> New Key Pair
+
+At the "Generate OpenPGP Key" Dialog menu, configure the following settings:
+
+-Select which account you would like associated with this key at the top (you will only have one email address setup)
+-Check the "No Passphrase" checkbox
+-Optionally, you can go to the advanced tab and change the key size
+
+Once that's all set, click "Generate Keys" and your key pair will be created.  
+
+When you are returned to the "OpenPGP Key Management" dialog, you can check the "Display all keys by default" checkbox, and you will see your key appear in the listbox.  You can right click the key to choose to copy the public key to your clipboard.  This is handy for if you want to share your key with someone else when the keyservers are down (to import a key, choose Edit -> Import Keys from clipboard).  
+
+There also exists, an option to upload your public key to the keyserver where others can easily download it in order to send you encrypted messages that only you can decrypt.  To upload your key, right click it in the list box and choose "Upload public keys to the keyserver."  To download keys from the server, choose:
+
+Keyserver -> Search for keys
+
+..and then type in the email address you'd like to download the public key for.  This will allow you to encrypt emails with that person's public key.  
+
+
+[size="4"]
+C.  Application[/size]
+
+So now it's time to send a test mail to yourself.  To send a message, click the "Write" button in the top left corner of the screen.  From there you can fill out the email form as you would using any other mail interface.  But before you send the message, you'll notice an OpenPGP dropdown menu.  Click it and choose "Encrypt Message" and your message will be encrypted when it is sent.  
+
+If you send a test email to yourself, you'll be able to prove that your message was encrypted by logging into your email account's web interface and trying to read the message.  You should find that the Subject wasn't encrypted, but the message itself was.  
+
+On android, you can use an application called K-9 to use PGP encryption as well, but as an interesting aside, unless you're using a hardened OS, you should assume everything on mobile devices is insecure (that's not naive, that's literally how it is, the NSA have released official opinions on the matter), thus I don't personally share my keys with my stock OS mobile device.

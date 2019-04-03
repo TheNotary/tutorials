@@ -1,0 +1,1 @@
+Setting up a PXE server and booting a client (TFTP, PXE, DHCP, ...NFS...)

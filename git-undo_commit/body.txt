@@ -1,0 +1,32 @@
+If you ever decide that you wish you had never made the last commit you made, you can undo the current commit and get back there.  Here's how:
+
+1)  Make it so git resets back to the commit before (aka "HEAD^")
+[code]
+$  git reset --soft HEAD^  
+[/code]
+
+Now the file changes are going to be there, but they won't be committed yet!  Meaning, you can stash them and drop them!
+
+2)  Drop the current, non-committed file changes
+[code]
+$  git stash
+$  git stash drop
+[/code]
+
+
+Now you should be back to the commit before the one you last made when we started (and of course that "BAD" progress will be lost forever).
+
+
+Here's a similar trick...
+
+What if your merge to the server fails because you did some last minute adjustments that you don't even need anymore?
+
+(do a git reset)
+[code]
+$  git reset --hard origin
+[/code]
+
+This will reset your local repo back to the way it was when you downloaded/synched it from the "origin" remote last.
+
+
+What about if you have already committed a mistake to a [url="http://stackoverflow.com/questions/4624881/how-can-i-uncommit-the-last-commit-in-a-git-bare-repository"]bare repository[/url]!?!  Well, no worries, a slightly more complicated solution is discussed [url="http://stackoverflow.com/questions/4624881/how-can-i-uncommit-the-last-commit-in-a-git-bare-repository"]here[/url].

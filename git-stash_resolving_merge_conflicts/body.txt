@@ -1,0 +1,20 @@
+Note To Self:  Rename this blog to "Git: The Secrets to Controlling the World"
+
+
+ref: http://dlinsin.blogspot.com/2009/07/git-stash.html
+
+
+If you make changes on your production server, and later on your development machine, make tons and tons of changes to lots of stuff, and decide some of the changes that you made on the production server were bad choices, you can delete all your changes on the production server and pull from the development machine by doing...
+
+$  git stash
+
+Then you could pop those old, stinkin server changes back into play by...
+
+$  git pop
+
+OR, you could just delete those changes
+
+$  git stash drop 
+
+
+Then you're done I guess...

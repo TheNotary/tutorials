@@ -1,0 +1,400 @@
+In the first part of this tutorial, all we really did was install git, and setup an account at github where we made a public repository and pushed an empty readme file to it.  
+In this second part, we're going to create another repository, and this time, we'll push a snazzy mono application to it.  
+
+
+To set this tutorial up, I will be doing the first set of instructions with my linux machine, and I will do the second section with my windows machine.  
+
+FIRST SECTION:  Setup a repository on git, and make a c# program.  
+SECOND SECTION:  Download the C# program from git, create improvements to the code, and then tell the owner about it.  
+THIRD SECTION:  Pull the contribution into my project to make it a better program.  
+
+
+
+::[b]FIRST SECTION[/b]  (on debian machine, acting as an owner of a new git repository)
+Ok, here's the stuff that I did that you can do too!  Just create your own github account and things should work out great.  
+(I'm doing this section in past tense, first person.  I hope you find that enjoyable.)  
+
+1)  I went to my github.com account and click the "new repository" button.  
+I named the new repository ipfixer_cs
+
+2)  I went into my debian machine via SSH and setup my development file structure...
+[code]
+~$  mkdir dev/ipfixer_cs
+~$  cd dev/ipfixer_cs
+[/code]
+
+initialized a git repository.  (this makes a high-tech .git folder filled with git information.  You obviously need to do this so you have something to upload to your online git repository.)
+[code]
+$ git init
+[/code]
+
+I'll add a readme that explains what this program is all about
+[code]
+$ vi README
+[insert key]
+ipfixer is a program that runs on a linux/mac/windows machine and sort of "pings" a webserver's PHP script.  In turn, the webserver records in an .xml file, 
+1) the address of the pinger, and 
+2) the host name it passed along to the central server.
+After that gets recorded, you can have your server distribute processor intensive tasks to the satellite, even if the satellite's IP address is liable to change (because whenever the satellite's IP changes, it alerts central processing).  
+[/code]
+
+Then I needed to add that new file to git.
+[code]
+$  git add README
+$  git commit -m 'first commit'        ~~that -m stands for "Message"
+[/code]
+
+Then I started thinking about how I'm going to get this repository online...  Oh yeah, let's register the word "origin" to point to my online git host.  
+[code]
+$  git remote add origin git@github.com:thisismygit/ipfixer_cs.git
+[/code]
+
+And after that, it became easy to upload it using the new origin variable I created:
+[code]
+$  git push -u origin master
+[/code]
+There, that got it online, into the "master" branch...  but wait, do I need to do that SSH thing here again?  If it gives you an error about permissions, try the below code.  
+
+(redundant?)
+[code]
+$  ssh-keygen -t rsa -C "your_email@youremail.com"
+<hit enter>
+<input an optional pass phrase>
+<copy an paste the newly made /.ssh/id_rsa.pub line into your github account's "public keys" section>
+[/code]
+
+
+
+
+Now it's time to make the .cs file.  I can't wait, oooh, goody!
+
+[code]
+$  vi ipfixer.cs
+[/code]
+
+
+(put in ipfixer.cs)
+[code]
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Net;
+using System.IO;
+
+namespace IpFixer
+{
+    class Program
+    {
+
+        static void Main(string[] args)
+        {
+            // this "Main" function, is where our program begins
+            // those args are command line arguments that were used to call the program
+            // eg   C:\thisProgram.exe -argument0 -argument1
+            //
+            // args[0] = "-argument0";
+            //
+            int IPCheckInterval = 10000;  // every ten second
+
+            // example usage:
+            // ipfixer http://www.domain.com/dev/ipfixer.php hostA
+
+            // if http:// then do http method
+            // else if ftp:// then do ftp method
+
+            // first argument is the host to connect to, including arguments
+            // second argument is
+
+            if (args.Length == 1)
+                if (args[0] == "help" || args[0] == "h" || args[0] == "-h" || args[0] == "/h" || args[0] == "/help" || args[0] == "-help")
+                {
+                    Console.WriteLine("help not implimented yet.");
+                    return;
+                }
+                else
+                    Console.WriteLine("plz specify a web address to interact with and a hostname as arguments.");
+
+
+            string address = "";
+            string hostName = "";
+
+            if (args.Length == 2)
+            {
+                address = args[0];
+                hostName = args[1];
+            }
+            else
+            {
+                Console.WriteLine("plz specify a web address to interact with and a hostname as arguments.");
+                return;
+            }
+
+
+
+            address += "?hostname=" + hostName + "&field=publicfield";
+            string ipData = "";
+           
+
+            while (true)
+            {
+                //  scrape
+
+                string curIP = DoWeb.GetExternalIp().ToString();
+                if (ipData != curIP)
+                {
+                    ipData = curIP;
+                    DoWeb.BrowseToPage(address);
+                    Console.Write(ipData);
+                }
+
+                System.Threading.Thread.Sleep(IPCheckInterval);
+            }
+        }
+    }
+
+
+
+    class DoWeb
+    {
+        public static void BrowseToPage(string Address)
+        {
+            // string url = "http://www.excelsiorcarpetone.com/clay/ipfixer.php?field=publicfield" + "&host=" + hostName;
+            WebRequest request = WebRequest.Create(Address);
+
+            request.ContentType = "Content-type: text/xml";
+            request.Method = "GET";
+
+            // Fire off the request and get the response.
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+
+            // System.Diagnostics.EventLog.WriteEntry("aaaMyIPFixer", "IP Fixer just tried to request a webpage.   Status:  " + response.StatusDescription);
+
+            // Get the stream containing content returned by the server.
+            Stream dataStream = response.GetResponseStream();
+            StreamReader reader = new StreamReader(dataStream);
+            //string responseFromServer = reader.ReadToEnd();
+            //System.Diagnostics.EventLog.WriteEntry("aaaMyIPFixer", "IP Fixer msg:  " + responseFromServer.Trim());
+        }
+
+
+
+
+        /// <summary>
+        /// This writes a string of text to an FTP server
+        /// Just specify the msg to write...
+        /// Later I'll make one that let's you specify the FTP server, the username, the pass, and the file path to write to.
+        /// </summary>
+        /// <returns>returns null if something goes wrong</returns>
+        public static void WriteToFTP(string msg, string FilePath, string Username, string Password, string ftpAddress)
+        {
+            string FTPAddress = "ftp://ftp.domain.net";
+            string filePath = FTPAddress + "/" + "castt/" + "update.txt";
+            string password = "yourpasswordgoeshere";
+            string username = "yourusernamegoes here";
+
+
+            FtpWebRequest request = (FtpWebRequest)FtpWebRequest.Create(filePath);
+
+            request.Method = WebRequestMethods.Ftp.UploadFile;
+            request.Credentials = new NetworkCredential(username, password);
+            request.UsePassive = true;
+            request.UseBinary = true;
+            request.KeepAlive = false;
+
+
+            // convert msg to byte[] so it can be put on the FTP server
+            byte[] myExternalIPAddress;
+            UTF8Encoding encoding = new System.Text.UTF8Encoding();
+            myExternalIPAddress = encoding.GetBytes(msg);
+
+
+            // write to the FTP server
+            Stream reqStream = request.GetRequestStream();
+            reqStream.Write(myExternalIPAddress, 0, myExternalIPAddress.Length);
+            reqStream.Close();
+        }
+
+        /// <summary>
+        /// This returns your IP address by navigating to an online IP reporter website; downloading the string it reports. 
+        /// Btw, you can get at the string by GetExternalIp().ToString()
+        /// Relys on http://www.whatismyip.com/automation/n09230945.asp working right
+        /// </summary>
+        /// <returns>returns null if something goes wrong</returns>
+        public static IPAddress GetExternalIp()
+        {
+            string whatIsMyIp = "http://www.whatismyip.com/automation/n09230945.asp";      // this is their special page that simply returns the string consisting of your IP address
+            WebClient wc = new WebClient();
+            UTF8Encoding utf8 = new UTF8Encoding();
+            string requestHtml = "";
+
+            try
+            {
+                requestHtml = utf8.GetString(wc.DownloadData(whatIsMyIp));
+            }
+            catch (WebException we)
+            {
+                // do something with exception
+                Console.Write(we.ToString());
+            }
+
+
+            int L1 = requestHtml.Length;    // Get length of IP address
+            int L2 = requestHtml.Replace(".", "").Length;  // remove decimal points and get new length
+
+            bool didFindValidIP;
+            if (L1 - L2 == 3)       // were there 3 decimal points?  That means it worked!
+                didFindValidIP = true;
+            else
+                didFindValidIP = false;
+
+
+            IPAddress externalIp = null;
+            if (didFindValidIP)
+            {
+                externalIp = IPAddress.Parse(requestHtml.ToString());
+            }
+            return externalIp;
+        }
+    }
+}
+[/code]
+
+
+Then we add that to our local repository:
+[code]
+$  git add ipfixer.cs
+$  git commit -m 'Added the .cs file!' 
+[/code]
+
+
+That was great!  After that I put it online so the whole world could see how awesome sharing is:
+[code]
+$  git push -u origin master
+[/code]
+
+Hmmm... I forgot to check if my .cs file compiles properly.  I know it works in windows, but I didn't check it on my debian system, so let me verify this.  
+
+[code]
+$  gmcs ipfixer.cs
+$  ./ipfixer.exe
+[/code]
+
+Great!  It's all working fine!  Notice that I need not bother adding the .exe file to the git repository because that would just be a waste of bandwidth.  
+
+Now to have someone else edit it (YOU!)
+
+
+
+:: [b]SECOND SECTION[/b]   on a second machine, download the git repository, make a change, and upload the change
+
+ref:  http://help.github.com/fork-a-repo/
+
+
+
+So, in order to make contributions, we need to create a "fork" off of the original project.  
+
+Imagine a fork in the road.  OK, now apply that to a code, taking two separate paths.  
+As each fork goes off in it's separate direction, each road widens with new features.  
+The two roads can reunite again, combining their awesome together as one.  
+This is what we shall do.  
+
+
+in mysysgit, get into your development directory
+[code]
+$ mkdir ~/dev
+$ cd ~/dev
+[/code]
+
+
+1)  now, login to your second github account...
+
+2)  browser to your first account's ipfixer_cs page
+      -click the fork button
+
+
+
+Now clone the git repository you created (ipfixer_cs)
+[code]
+$  git clone git@github.com:< insert the username that you created the FORK under >/ipfixer_cs.git
+[/code]
+
+That puts the git repository/files onto your hard drive.  
+
+Now would be a good time to setup the repository to point back to where you forked from, rather than your dinky forking account.  
+
+[code]
+$  cd ipfixer_cs
+$  git remote add upstream git://github.com/thisismygit/ipfixer_cs.git
+$  git fetch upstream
+[/code]
+fetch upstream will will fetch all the little .git things, the way they are in the original source, as opposed to the forker's account.  
+
+Then make some arbitrary alterations to the readme file in a text editor.  
+After you've made some changes, add them, commit them, and then push them.  
+
+
+[code]
+$  git add README
+$  git commit -m 'made arbitrary changes to README'
+$  git push origin master 
+[/code]
+
+
+Perfect!  Now issue a pull request to the original author to remind him that our code is better than his and he must accept the changes immediately.  
+ref:  http://help.github.com/pull-requests/
+
+
+In the web interface, 
+  1)  navigate to your forking repository
+  2)  Click the pull request
+
+[code]
+hey dood. I ficksed up sum typos in yor reedme file
+[/code]
+
+
+oh, btw, to make sure you have the latest and greatest version of the original, do this command:
+
+[b]owner:[/b]
+[code]
+$  git fetch origin           ~~ Download the remote "origin" into a "secret branch"
+$  git merge origin/master    ~~ Merge that "secret branch" (origin/master) into local master
+[/code]
+
+[b]forker:[/b]
+[code]
+$ git fetch upstream
+$ git merge upstream/master
+[/code]
+
+The first of those commands checks the "remote" named upstream (the original owner) to see if it's been updated since you last fetched/cloned it.  
+If it has been updated, it gets fetched to your repo under the branch upstream/master.  
+The second command of course merges the branch upstream/master into your master branch.  
+
+
+Also, note that you can see what the remotes are for any git repository by git remote, eg
+[code]
+$  git remote -v
+origin  git@github.com:TheNotary/ipfixer_cs.git (fetch)
+origin  git@github.com:TheNotary/ipfixer_cs.git (push)
+upstream          git://github.com/thisismygit/ipfixer_cs.git (fetch)
+upstream          git://github.com/thisismygit/ipfixer_cs.git (push)
+[/code]
+ref:  http://progit.org/book/ch2-5.html
+
+Where upstream refers to the place from which you got the repository, and origin refers to your github account where you forked origin from.  
+You can only push to remotes that have SSH URLs, so in this case, we can only push to origin.  
+To push upstream, you must send them a pull request and they must pull your data from their side.  
+
+
+Before you tune out, check this command out
+[code]
+git instaweb --httpd webrick --port 1234
+[/code]
+You can thereafter use any webbrowser, to BROWSE YOUR GIT REPOSITORY!  Yeah, you don't need git hub at all (although it's pretty sweet).  
+
+::  [b]THIRD SECTION[/b]  acknowledge a pull request.  
+
+The HTML interface is pretty straight forward.  Go to the original owner's account.  In the upper right hand corner, you'll see that it appears as though you have '1' message waiting for you!  Oooh, how fun.  Click it, and push buttons until there's a button that says something like "accept pull request".
+
+Eager to see a [url="http://www.dreamincode.net/forums/blog/1662/entry-3465-day-47-how-to-use-githubcom-with-netbeans-70/"]third git entry[/url]?

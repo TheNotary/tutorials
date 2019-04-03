@@ -1,0 +1,134 @@
+OK, MySql is installed, we did that in passing as we installed our webserver and php.  
+It was a total breeze, but if you've forgotten how we did that, go [url="http://www.dreamincode.net/forums/blog/1662/entry-3419-day-2-installing-mysql-a-web-server-named-nginx-and-php-in-debian-and-terrible-vi-notes/"]there[/url].  
+
+
+What we need now is to:
+1)  Setup mysql to be connected to by a specific remote machine
+2)  Create a test user
+3)  Create a test database
+4)  Connect to it remotely through SSH
+5)  Connect to it programatically with a language (i'll use c# and php too maybe)
+
+
+# 1 - setting up mysql to be connected to remotely
+By default, for safety reasons, mysql only allows connections from the local host.  The configuration file that changes this is located at:
+[code]
+$  vi /etc/mysql/my.cnf
+[/code]
+
+It looks like the port it runs on is 3306, so let's forward that port accordingly on our router (not discussed...)
+Also, we need to comment out the below code to unlimit connection addresses:
+[code]
+#bind-address = 127.0.0.1 # sharp signs are comments to unix
+[/code]
+after you've commented bind-address, restart mysql:
+[code] 
+$  /etc/init.d/mysql restart
+[/code]
+
+Now, create a user for me to access your mysql server:
+[code]
+$  mysql -u root -p
+<enter password>
+mysql >  CREATE USER 'notary'@'localhost' IDENTIFIED BY 'password';
+[/code]
+(WARNING!  IF YOU HAVE A PROBLEM WITH MYSQL COMMANDS IN THE FUTURE, YOU DID  $ mysql -root -p  .  It is not known why this is, but 83% of humans prefer typing this rather than typing it the proper way.)
+
+Now create a database and give me access to it:
+[code]
+mysql >  CREATE DATABASE dev;
+mysql >  GRANT ALL ON dev.* TO 'notary'@'localhost' IDENTIFIED BY 'password';
+mysql >  GRANT ALL PRIVILEGES ON *.* TO notary@localhost IDENTIFIED BY “password”;
+[/code]
+
+great job, now access putty, and SSH into another server, and from there, see if you can remotely access the one we just setup:
+
+
+This command will connect to your host
+[code]
+$  mysql mysql_dbName -h domainOrIP.com -u mysql_userName -p  ~~ this command is a place holder, the below command I actually used
+$  mysql movestra_dev -h afalsehouseofcards.com -u movestra_notary -p
+[/code]
+
+That '-p' at the end signifies that you mean to provide a password down the road.  
+After issueing the command you'll be prompted for that password.  
+After that you can run SQL commands on the remote host, such as.  
+
+[code]
+mysql>  show tables;
+mysql>  SELECT * FROM oneOfYourTables;
+[/code]
+
+That code above will only work if you have created at least one table...
+
+[code]
+mysql>  CREATE TABLE oneOfYourTables (Column1 text(250), Column2 text(250));
+[/code]
+
+There, now we can run that SELECT query...  It'll say something about "emptpy set" because you don't have data in your table yet.  
+
+Let's go ahead and put stuff in our table...
+
+[code]
+mysql>  INSERT INTO oneOfYourTables (Column1, Column2) VALUES ('this goes in column1', 'this goes to column2');
+mysql>  INSERT INTO oneOfYourTables (Column1, Column2) VALUES ('this goes in column1 of row 2!', 'this goes under column2 row 2');
+[/code]
+
+NOW run that cool SELECT command, and you'll see what the INSERT command did to our table.  
+
+
+Here are some helpful commands that will give you information about MySQL's condition:
+[code]
+mysql >  show databases;
+
+mysql >  use [db name];   // switch to a database
+
+mysql >  show tables;
+
+mysql >  describe oneOfYourTables;   // show table's field formats
+
+mysql >  SELECT COUNT(*) FROM [table name];    // returns the number of rows in your table
+[/code]
+
+find more below:
+ref:  http://www.pantz.org/software/mysql/mysqlcommands.html
+
+
+
+Fun, now lets connect to this sucker in a C# application.  
+
+Refs:
+[code]
+Allow any host connection/ see info in mysql
+http://www.howtogeek.com/howto/programming/mysql-give-root-user-logon-permission-from-any-host/
+[/code]
+
+
+
+
+
+
+
+:: TO GET A C# APP TO BE ABLE TO CONNECT TO A MySQL DATABASE
+
+[code]
+GRANT ALL PRIVILEGES ON *.* TO movestra_notary@'clienthostname' IDENTIFIED BY 'root-password' 
+[/code]
+
+
+
+...Now I'm going to setup a c# application on git that you will be able to use to access your server remotely.  
+
+Ok, done!  You can check it out at https://github.com/TheNotary/__AccessDatabaseWEB
+
+(C# application, windows only, use msysgit to run the below command in git bash)
+[code]
+$  git clone git://github.com/TheNotary/__AccessDatabaseWEB.git
+[/code]
+
+
+
+To use that rather ugly application, fill in the MySQL stuff for your server, and then click the radio button.  
+After you click the radio button, it will see if it can connect to the specified server.  The console will let you know if something went wrong.  The other function that works for mysql on that c# app is the read button, but that's about it.  
+
+Unfortunately, that application doesn't work in mono because mono doesn't seem to support writing to .mdb files, and something goes wrong with the MySQL thing too.. I think...

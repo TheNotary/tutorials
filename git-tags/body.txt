@@ -1,0 +1,43 @@
+As time goes on, while managing your source code with github, you'll find yourself becoming bored with just having the latest version of your project being easily downloadable from 
+
+[code]www.github.com/YOUR_NAME/YOUR_PROJECT[/code]
+
+And you might even want several versions of your project accessible to your users.  Well good news, there's tagging!
+
+ref:  http://wptheming.com/2011/04/add-remove-github-tags
+
+With git tagging, you can tag versions of your code with version numbers and summaries.  Then you can upload these tags to github and your users will have a nifty download interface on your github page if they click the "tags" tab.  
+
+To create your very first tag on the local repo:
+[code]
+$  git tag -a v1.0 -m "Version One: There shall be no escape!"
+[/code]
+
+You can list it off now (along with all other tags) by running:
+[code]
+$  git tag -n
+[/code]
+
+Then to upload it do:
+[code]
+$  git push origin --tags
+[/code]
+
+
+Great job!  Now you can check your github page and you will see that your project now has 1 tag!  You even have a direct download link!
+
+[inline]https://github.com/YOUR_NAME/YOUR_PROJECT/zipball/v1.0[/inline]
+
+[IMG]http://i1130.photobucket.com/albums/m529/whinceton/gittag.png[/IMG]
+
+But eventually you will sober up from the excitement of learning how tags work, and will like to delete this tag as that its comment is too silly.  This too can be done with ease.  
+
+To delete that tag:
+[code]
+$  git tag -d v1.0
+$  git push origin :v1.0
+[/code]
+
+And just as mysteriously as it had arrived, it was gone...
+
+

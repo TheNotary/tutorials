@@ -1,0 +1,256 @@
+# Debian - Raid 1 (Mirroring Hard Drives)
+
+Before we begin, let me point out some benefits of using raid 1 mirroring.  First, your mp3 files won't have their meta tags jumbled up and mangled by typical hard drive corruption.  Also your movie files won't suddnely stop playing past certain points due to corruption.  Umm... your exe files won't randomly give you errors about not being winows 32bit or 64bit executables...  So all that stuff is good.  So if you need to store files intact for long periods of time, you should spread them across two HDDs which will be able to check for corruption and auto-heal themselves on the fly.  
+
+Now then, let us begin.  
+
+In this entry we will setup a RAID 1 (mirror) on our debian system.  This is simply a bare procedure.  For help maintaining a RAID, see the references.  Even though I made sure to buy a motherboard that supported RAID 1, it would turn out that this 'support' relies entirely on the CPU to deal with the logic of the RAID setup (these types of raid controllers are called fakeraid).  Windows machines will be completely faked out by these raids, even though they consume CPU resources and 'could' show up as two separate devices, the drivers for fakeraids will hide this information from the administrator.  I like that kind of stuff in Windows, but in linux I like to know more about what's going on.  For this reason, I'm not going to call our setup hardware raid, nor software raid, it just confuses google matters.  
+
+Tools:
+mdadm - The program in charge of making our RAID work is called mdadm (Multiple Device ADMin).  
+cfdisk - this utility formats a hard disk.  
+mkfs.ext4 - this utility creates ext4 partitions.  
+
+
+
+#### 1)  Prep the drives
+
+We need to give these drives partitions so mdadm can assemble them into a mirroring array for us.  For this tutorial, the partitions we'll be creating and committing to a RAID will be /dev/sda1 and /dev/sdb1.  You may use `fdisk -l` to see what drives you have ready to partition and RAID (drives look like `/dev/sda`, there partitions look the same except they end in a number).  
+ref:  http://linux.justinhartman.com/Installing_a_second_hard_drive
+
+
+(partition)
+
+```
+$  cfdisk /dev/sda
+$  cfdisk /dev/sdb
+1. New >> Primary >> Size in MB (skim 100mb less or so to make it possible to replace the drive with an HDD with a couple bad sectors)
+2. Set to BOOTABLE if desired.
+3. Once done select Write
+4. Select Quit
+```
+
+
+
+#### 2)  Installation of mdadm
+
+```
+$  apt-get install mdadm
+$  modprobe raid456
+$  modprobe raid1
+```
+
+ref:  https://raid.wiki.kernel.org/articles/r/a/i/RAID_setup_cbb2.html
+
+After those commands are run, you should see that the virtual file mdstat will yield this output.  
+
+```
+$  cat /proc/mdstat
+Personalities : [raid6] [raid5] [raid4] [raid1]
+unused devices: <none>
+```
+
+
+#### 3)  Configuration of mdadm (creating a raid 1 array)
+
+
+This command will setup the devices to be configured in the RAID.  After entering the command, your HDD will light up.  This indicates that the drives are being synchronized.  
+
+```
+mdadm --create --verbose /dev/md0 --level=mirror --raid-devices=2 /dev/sda1 /dev/sdb1
+```
+
+To check the progress of the syncronization, do
+```
+$  cat /proc/mdstat
+```
+
+Don't worry, this process is completely unobtrusive and will run in the background until it has completed the mirroring.  I think it will even survive reboots, although I'm not going to test that now.  
+
+Finally save your mdadm configuration, 
+
+```
+$  mdadm --detail --scan >> /etc/mdadm/mdadm.conf
+```
+
+That command scans your system for partitions marked as raid members and puts them into the mdadm config file which is read on system boot up and determines which raid arrays to bring online.  In our case, it will likely bring up the /dev/md0 array on system boot.  
+
+
+
+
+
+#### 4)  Create your filesystem
+
+From this point on, your raid device at `/dev/md0` can now be manipulated as though it were any other partition like `/dev/sdc1` for example.  
+
+Google has recently adopted ext4 as their file system of choice (2010).  Let's setup an ext4 partition:
+
+```
+mkfs.ext4 /dev/md0 -b 4096 -E stride=16,stripe-width=80
+```
+
+That `-b 4096` pattern makes our drive work well with windows.  I might evaluate windows server and write up some tuts, even though it's a proprietary and likely won't even work with ext4...
+
+
+
+
+
+
+
+
+#### 5)  Starting and Stopping the RAID:
+
+If you followed my instructions thus far, you now have a "Persistent Superblock" written to all of the drives participating in the array.  This lets the kernel know that they are a RAID for sure, and to treat them as such.  
+
+Every time your computer starts, it needs to reassemble the RAID from it's constituent disks and will do this automatically.  This process can also be invoked [i]manually [/i]by the command,
+```
+mdadm --assemble /dev/md0 /dev/sda1 /dev/sdb1
+```
+
+To close down the raid, `/dev/md0`, use the command,
+```
+$  mdadm --stop /dev/md0
+```
+
+And of course, she can be brought right back online again using the former command mentioned.
+
+
+#### 6)  FSTAB, for auto mounting the RAID md0
+
+Well, now that you have this new `/dev/md0` device, you can treat it just like a normal HDD.  We've already put an ext4 filesystem on it, and it's ready to be mounted.  
+
+```
+$  mkdir /storage
+$  mount -t ext4 /dev/md0 /storage
+$  echo 'Hello world of RAID!' >> /storage/h.txt
+```
+
+
+So let's make that mount point a permanent mount by editing the /etc/fstab file.  
+
+Add this line to your fstab file:
+(/etc/fstab)
+
+```
+.
+.
+.
+/dev/md0 /storage ext4 relatime,errors=remount-ro 0 1 
+```
+
+
+That pretty much sums up the procedure.  The next thing you should do is probably follow a samba procedure and get some file sharing going on those hard drives.  
+
+End Of Tut
+==============================================================================
+
+
+
+# FAQi
+
+#### Systems Green
+
+How do you know that your drives are in working condition?
+
+You'll see that mdstat presents your situation something like this:
+
+```
+$  cat /proc/mdstat
+Personalities : [raid1]
+md0 : active raid1 sda1[0] sdb1[1]
+      1464845671 blocks super 1.2 [2/2] [UU]    # [UU] IS GREAT!
+
+unused devices: <none>
+```
+
+Also, you'll be able to mount /dev/md0 as though it were any other partition.  
+
+
+#### System's Red
+
+How do you know when one of your drives had gone down?
+
+```
+
+$  cat /proc/mdstat
+Personalities : [raid1]
+md0 : active raid1 sda1[0]
+      1464845671 blocks super 1.2 [2/1] [U_]     # [U_] IS BAD!
+```
+
+
+#### Fix When Things are Bad
+
+When I unplug one of my hard drives while the server is running (for testing purposes), my array breaks.  How do it put things back together?
+
+
+When you unplugged the hard drive, mdadm may have lost it forever due to random corruption or perhaps the original drive "got ahead" of the unplugged one and therefore the drives became out of sync I guess... (this bug happened to me on my first test)  So you may actually need to explicitly tell mdadm to fail that device.  Then you can add the device back into the array.  
+
+ref:  http://www.ducea.com/2009/03/08/mdadm-cheat-sheet/
+(Let's assume that it was sdb1 that we pulled...)
+
+```
+#  Clone partitions on /dev/sda to /dev/sdb to ensure proper mirroring
+$  sfdisk -d /dev/sda | sfdisk /dev/sdb
+
+$  mdadm --fail /dev/md0 /dev/sdb1
+$  mdadm --remove /dev/md0 /dev/sda1
+$  mdadm --add /dev/md0 /dev/sdb1
+```
+
+
+
+
+
+
+
+#### What are some other random commands involving mdadm?
+
+```
+#  Rebuild your mdadm.conf file by scanning hdd metadata I believe...
+$  mdadm --examine --scan --config=mdadm.conf >> /etc/mdadm/mdadm.conf
+
+#  Fail and remove a hard drive on one line
+$  mdadm /dev/md0 --fail /dev/sda1 --remove /dev/sda1
+
+#  Build a fresh array in a very concise manor
+$  mdadm -Cv /dev/md0 -l1 -n2 /dev/sd[ab]1 
+
+#  Delete an array
+$  mdadm --remove /dev/md0
+```
+
+
+
+#### How do I add a drive to a raid arrary once the original pair dies?
+
+https://www.howtoforge.com/replacing_hard_disks_in_a_raid1_array
+
+How to re-add a drive when it falls out of the array (for being unplugged too long)?
+
+`sudo mdadm --manage /dev/md0 --re-add /dev/sdb3`
+
+
+
+
+#### How do I copy the partition table of an existing drive to a new replacement drive
+
+Below is how you do it for GPT partitions that are greater than 2TB.  
+
+```
+# Define source and dest
+source=/dev/sdx
+dest=/dev/sdy
+
+
+# Save MBR disks
+sgdisk --backup=/partitions-backup-$(basename $source).sgdisk $source
+sgdisk --backup=/partitions-backup-$(basename $dest).sgdisk $dest
+
+# Copy $source layout to $dest and regenerate GUIDs
+sgdisk --replicate=$dest $source
+sgdisk -G $dest
+```
+
+
+

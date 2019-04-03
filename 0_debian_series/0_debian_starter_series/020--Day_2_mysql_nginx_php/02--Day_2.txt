@@ -1,0 +1,541 @@
+These needs a re-write... base it off of:
+
+https://www.digitalocean.com/community/tutorials/how-to-install-linux-nginx-mysql-php-lemp-stack-on-debian-7
+
+
+
+ref:  http://kevin.vanzonneveld.net/techblog/article/ruby_with_nginx_on_ubuntu_lucid/
+[font="Impact"]Updated:  3-23-2012[/font]
+
+Hey, in this tutorial, we will be installing nginx, PHP, and mysql.  
+
+[size="3"][b]Overview:[/size][/b]
+1) Install nginx
+2) Install PHP
+2.1) Configure nginx to work with virtual hosts and PHP
+3) Install mysql
+
+
+[size="5"][b]::  1 - nginx[/size][/b]
+
+UPDATE:  Install a bunch of new prerequisits.  I think most of them will be automatically installed for you, but just in case.  
+[code]
+$  apt-get update
+$  apt-get install vim gcc build-essential libpcre3 libpcre3-dev libssl-dev
+[/code]
+
+Grab the freshest source code from the internet.  
+[code]
+$  cd /tmp
+$  wget http://nginx.org/download/nginx-1.0.14.tar.gz
+$  tar xvfz nginx-1.0.14.tar.gz
+$  cd nginx-1.0.14
+[/code]
+
+Compile it (ref:http://wiki.nginx.org/InstallOptions)
+[code]
+$  ./configure --sbin-path=/usr/local/sbin --with-http_ssl_module
+$  make
+$  make install
+[/code]
+(I think we may have been able to use --http-fastcgi-temp-path=PATH and pointed to our cgi thing, Not sure yet though).  
+(the option --with-cpu-opt=CPU   might be of some interest to us later, I think my dell is a... celeron... lame...)
+
+
+We want to be able to start and stop the thing, so make the following file:
+(vi /etc/init.d/nginx)
+[code]
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:          nginx
+# Required-Start:    $all
+# Required-Stop:     $all
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: starts the nginx web server
+# Description:       starts nginx using start-stop-daemon
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/local/sbin/nginx
+NAME=nginx
+DESC=nginx
+
+test -x $DAEMON || exit 0
+
+# Include nginx defaults if available
+if [ -f /etc/default/nginx ] ; then
+        . /etc/default/nginx
+fi
+
+set -e
+
+case "$1" in
+  start)
+        echo -n "Starting $DESC: "
+        start-stop-daemon --start --quiet --pidfile /usr/local/nginx/logs/nginx.pid --exec $DAEMON -- $DAEMON_OPTS
+        echo "$NAME."
+        ;;
+  stop)
+        echo -n "Stopping $DESC: "
+        start-stop-daemon --stop --quiet --pidfile /usr/local/nginx/logs/nginx.pid --exec $DAEMON
+        echo "$NAME."
+        ;;
+  restart|force-reload)
+        echo -n "Restarting $DESC: "
+        start-stop-daemon --stop --quiet --pidfile /usr/local/nginx/logs/nginx.pid --exec $DAEMON
+        sleep 1
+        start-stop-daemon --start --quiet --pidfile /usr/local/nginx/logs/nginx.pid --exec $DAEMON -- $DAEMON_OPTS
+        echo "$NAME."
+        ;;
+  reload)
+      echo -n "Reloading $DESC configuration: "
+      start-stop-daemon --stop --signal HUP --quiet --pidfile /usr/local/nginx/logs/nginx.pid --exec $DAEMON
+      echo "$NAME."
+      ;;
+  *)
+        N=/etc/init.d/$NAME
+        echo "Usage: $N {start|stop|restart|force-reload}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
+[/code]
+
+
+Make it executable, test it out, and make it boot at startup.  
+[code]
+$  chmod 755 /etc/init.d/nginx
+$  /etc/init.d/nginx start
+## After this command, you should be able to go to localhost and see "welcome to nginx!"
+$  cd /etc/init.d 
+$  update-rc.d nginx defaults
+[/code]
+
+
+Now we take a break from nginx to setup PHP.  
+
+
+
+[size="5"][b]::  2 - PHP[/size][/b]
+
+[code]
+$  apt-get install php5-cgi php5-mysql php5-curl php5-gd php5-idn php-pear php5-imagick php5-imap php5-json php5-mcrypt php5-memcache php5-mhash php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl 
+[/code]
+
+
+Put fix at bottom of php.ini
+(vi /etc/php5/cgi/php.ini)
+[code]
+.
+.
+.
+cgi.fix_pathinfo = 1
+[/code]
+
+
+
+(vi /etc/init.d/php-fastcgi)
+[code]
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          php-fastcgi
+# Required-Start:    $all
+# Required-Stop:     $all
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start and stop php-cgi in external FASTCGI mode
+# Description:       Start and stop php-cgi in external FASTCGI mode
+### END INIT INFO
+
+# Author: Kurt Zankl <kz@xon.uni.cc>
+
+# Do NOT "set -e"
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="php-cgi in external FASTCGI mode"
+NAME=php-fastcgi
+DAEMON=/usr/bin/php-cgi
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
+. /lib/lsb/init-functions
+
+# If the daemon is not enabled, give the user a warning and then exit,
+# unless we are stopping the daemon
+if [ "$START" != "yes" -a "$1" != "stop" ]; then
+        log_warning_msg "To enable $NAME, edit /etc/default/$NAME and set START=yes"
+        exit 0
+fi
+
+# Process configuration
+export PHP_FCGI_CHILDREN PHP_FCGI_MAX_REQUESTS
+DAEMON_ARGS="-q -b $FCGI_HOST:$FCGI_PORT"
+
+
+do_start()
+{
+        # Return
+        #   0 if daemon has been started
+        #   1 if daemon was already running
+        #   2 if daemon could not be started
+        start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null || return 1
+        start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --background --make-pidfile --chuid $EXEC_AS_USER --startas $DAEMON -- $DAEMON_ARGS || return 2
+}
+
+do_stop()
+{
+        # Return
+        #   0 if daemon has been stopped
+        #   1 if daemon was already stopped
+        #   2 if daemon could not be stopped
+        #   other if a failure occurred
+        start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE > /dev/null # --name $DAEMON
+        RETVAL="$?"
+        [ "$RETVAL" = 2 ] && return 2
+        # Wait for children to finish too if this is a daemon that forks
+        # and if the daemon is only ever run from this initscript.
+        # If the above conditions are not satisfied then add some other code
+        # that waits for the process to drop all resources that could be
+        # needed by services started subsequently.  A last resort is to
+        # sleep for some time.
+        start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
+        [ "$?" = 2 ] && return 2
+        # Many daemons don't delete their pidfiles when they exit.
+        rm -f $PIDFILE
+        return "$RETVAL"
+}
+
+case "$1" in
+  start)
+        [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+        do_start
+        case "$?" in
+                0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+                2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+        esac
+        ;;
+  stop)
+        [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+        do_stop
+        case "$?" in
+                0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+                2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+        esac
+        ;;
+  restart|force-reload)
+        log_daemon_msg "Restarting $DESC" "$NAME"
+        do_stop
+        case "$?" in
+          0|1)
+                do_start
+                case "$?" in
+                        0) log_end_msg 0 ;;
+                        1) log_end_msg 1 ;; # Old process is still running
+                        *) log_end_msg 1 ;; # Failed to start
+                esac
+                ;;
+          *)
+                # Failed to stop
+                log_end_msg 1
+                ;;
+        esac
+        ;;
+  *)
+        echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
+        exit 3
+        ;;
+esac
+[/code]
+
+[code]
+$  chmod 755 /etc/init.d/php-fastcgi
+[/code]
+
+WARNING type ':set paste' into VM before you try and paste this in or it will miss some of the beggining parts of the file for weird reasons we don't fully understand...
+(vi /etc/default/php-fastcgi)
+[code]
+#
+# Settings for php-cgi in external FASTCGI Mode
+#
+
+# Should php-fastcgi run automatically on startup? (default: no)
+
+START=yes
+
+# Which user runs PHP? (default: www-data)
+
+EXEC_AS_USER=www-data
+
+# Host and TCP port for FASTCGI-Listener (default: localhost:9000)
+
+FCGI_HOST=localhost
+FCGI_PORT=9000
+
+# Environment variables, which are processed by PHP
+
+PHP_FCGI_CHILDREN=5
+PHP_FCGI_MAX_REQUESTS=1000
+[/code]
+
+Test that it works and set it to automatically start at boot time.  
+[code]
+$  /etc/init.d/php-fastcgi start
+$  cd /etc/init.d
+$  update-rc.d php-fastcgi defaults
+[/code]
+
+
+Great, we're almost there, we just have a few settings to change in nginx to enable php.  
+
+[size="4"][b]::-  2.1 Configure Nginx with virtual hosts and PHP [/size][/b]
+
+
+Find each corresponding line and either change it, or uncomment it.  DON'T WRITE NEW LINES.
+(vi /usr/local/nginx/conf/nginx.conf)
+[code]
+[...]
+user www-data www-data;
+worker_processes  5;
+[...]
+    keepalive_timeout  65;
+[...]
+[/code]
+
+There's more stuff in the file, virtual hosts, contained in [inline]server {}[/inline] containers.  Make your default one look like this
+
+[code]
+[...]
+    server {
+        listen       80;
+        server_name  192.168.253.132;  # modified, change to what ever the ip address of your webserver is.  
+
+        #charset koi8-r;
+
+        #access_log  logs/host.access.log  main;
+
+        location / {
+            root   html;
+            index  index.php index.html index.htm;  #modified
+        }
+
+        #error_page  404              /404.html;
+
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+        # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+        #
+        #location ~ \.php$ {
+        #    proxy_pass   http://127.0.0.1;
+        #}
+
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        location ~ \.php$ {                         #Uncomment these lines...
+            root           html;
+            fastcgi_pass   127.0.0.1:9000;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /usr/local/nginx/html$fastcgi_script_name;            #modified!
+            include        fastcgi_params;
+        }
+
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        #location ~ /\.ht {
+        #    deny  all;
+        #}
+    }
+[...]
+[/code]
+
+
+For good measure, let's create a second virtual machine.  When using ruby on rails, you're going to need to setup multiple virtual machines (on subdomains).
+Add the below virtual server just below the first [inline]server {}[/inline] container.  
+
+[code]
+[...]
+[... first virtual server...]
+
+    server {
+        listen       80;
+        server_name  localhost;  # modified 
+
+        #charset koi8-r;
+
+        #access_log  logs/host.access.log  main;
+
+        location / {
+            root   html/mt;                                      # NOTICE THIS SLY LINE!
+            index  index.php index.html index.htm;  #modified
+        }
+
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        location ~ \.php$ {                         #Uncomment these lines...
+            root           html;
+            fastcgi_pass   127.0.0.1:9000;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /usr/local/nginx/html$fastcgi_script_name;            #modified!
+            include        fastcgi_params;
+        }
+    }
+[...]
+[/code]
+
+Now what we've done here is that, if someone types the [b]IP address[/b] of our server in their web browser, they get brought to 
+[code]
+/usr/local/nginx/html/index.html
+[/code]
+
+BUT, if they type in [b]http://localhost[/b] they get brought to
+[code]
+/usr/local/nginx/html/mt/index.html
+[/code]
+
+Create that second index html and test it out for yourself:
+(vi /usr/local/nginx/html/mt/index.html)
+[code]
+<h1> This is a virtual server! </h1>
+[/code]
+
+This example requires that you are able to use a webbrowser on the server machine.  
+
+Great, now if you'd prefer, delete that second virtual server, and change the server_name declaration to [inline]server_name _; [/inline] in order to catch all requests, no matter how the client got to the webserver.   
+
+On your connecting machine, consider adding these lines to your HOSTS file (which will redirect domain names to local IP address of your choice):
+[code]
+192.168.0.11      lo.com
+192.168.0.11      test.lo.com
+192.168.0.11      appname.lo.com
+[/code]
+You can configure those virtual hosts in nginx if you'd like to, each of those addresses can be a different rails app.  
+
+
+OK, think PHP again, we haven't tested that properly yet...
+
+Create a php file in your html root directory to test if php is working yet.
+(vi /usr/local/nginx/html/info.php)
+[code]
+<?php
+  phpinfo();
+?>
+[/code]
+
+Now reboot your system and navigate to the new page you created.  
+[code]
+http://localhost/info.php
+[/code]
+
+
+
+
+[size="5"][b]:: 3 - MySql[/b][/size]
+
+Ok, let's slap MySql on there too.  It's a breeze.  That 15-dev may someday become 16-dev.  I think I made a note of that somewhere else...
+[code]
+$  apt-get install mysql-server mysql-client libmysqlclient15-dev
+[/code]
+Atm, it will prompt you to specify a desired root password, so just go along with all that.  
+
+After the installation, you should be able to run the mysql client and even verify that the server is ticking away on localhost
+[code]
+$  mysql -u root -p
+mysql >  exit
+[/code]
+
+[code]
+$  netstat -tap | grep mysql
+tcp        0      0 localhost.localdo:mysql *:*                     LISTEN     2713/mysqld
+[/code]
+
+We're done, yay!
+----------------------------------------------------------------------
+
+(terrible) VI notes:
+Ok, vi is a text editor.  It's terrible.  But it works good in a terminal window.  Here's what goes through my mind when I try to use it.  
+[code]
+TEXT INPUT MODE:
+hit insert to enter text editing mode
+DO NOT hit the arrow keys, they won't do what you want
+right click on putty.exe's window to paste your clipboard into the terminal.  
+
+COMMAND MODE:
+hit esc to get back into command mode.
+hit delete key when in command mode to delete lines.
+hit the arrow keys to move about the page.  
+hit "dd" to delete a line.
+hit "u" when you've made a mistake to undo changes to the line.
+
+hit "/ STRING" to search the file for STRING, forward.
+hit "? STRING" to search the file for STRING, backward.
+hit "n" to repeat a search.
+
+
+TEXT SELECTION
+hit "V" to begin highlighting text.  
+hit "y" to Copy (aka "yank").
+hit "p" to Paste.
+
+
+GETTING OUT
+hit ":wq" to save and quit.
+hit ":q!" to quit with out saving.  
+
+SYNTAX HIGHLIGHTING
+hit ":syntax on" to have comments a special color, strings a different color, etc.
+hit ":syntax off" if that gets boring.   
+[/code]
+
+I've recently discovered that vim exists too, and works just like vi only it must have some "improved" features...
+Turn syntax on (and set syn=ruby) automatically:
+ref: http://web.archive.org/web/20090220165903/http://ubuntuforums.org/archive/index.php/t-112119.html
+Advanced plugin you can get for VIM:
+ref: http://www.vim.org/scripts/script.php?script_id=1567
+
+VI Notes 2:
+[code]
+http://www.youtube.com/watch?v=J1_CfIb-3X4
+
+:set incsearch   ~~ turns on incremental search... type /pattern  in vi to see what I mean
+*                ~~ Search for next occurance of word at cursor
+f<letter>        ~~ Searches for the next occurance of the specified letter (eg. fa)                 
+	;               ~~ go to the next one down
+	,               ~~ go back to the previous one
+
+de               ~~ delete to end of word
+
+:%s              ~~ FIND AND REPLACE!
+
+:%s/bla/blaa/g   ~~ for the whole file... replace... / 'bla' / with 'blaa' / Can be more than once per line
+
+
+gg  ~~beggining of file
+G   ~~End of file
+[/code]
+
